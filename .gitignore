@@ -1,0 +1,7 @@
+/dist/
+/src/faucet.ts
+/node_modules/
+/.idea/modules.xml
+/.idea/taquito-stuff.iml
+/.idea/vcs.xml
+/.idea/jsLibraryMappings.xml
