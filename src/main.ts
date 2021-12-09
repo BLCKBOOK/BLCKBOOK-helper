@@ -9,7 +9,7 @@ import {faucet} from './faucet';
 import {pinataKeys} from './pinata-keys';
 import {importKey} from '@taquito/signer';
 import {tzip16, Tzip16Module} from '@taquito/tzip16';
-import pinataSDK from '@pinata/sdk'
+import pinataSDK from '@pinata/sdk';
 
 const Tezos = new TezosToolkit('https://hangzhounet.api.tez.ie');
 Tezos.addExtension(new Tzip16Module());
@@ -117,11 +117,14 @@ class FA2Contract extends Contract {
         } catch (error) {
             console.log(`Error: ${JSON.stringify(error, null, 2)}`);
         }
+    }
 
-        async function getCurrentTokenIndex(): Promise<number> {
-            const contract = await Tezos.contract.at(tokenContractAddress);
-            const storage = await contract.storage();
+    async getCurrentTokenIndex(): Promise<number | undefined> {
+        try {
+            const storage = await this.contract?.storage();
             return (storage as any).all_tokens.toNumber() as number;
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
         }
     }
 }
@@ -147,24 +150,16 @@ class AuctionHouseContract extends Contract {
         super(auctionHouseContractAddress);
     }
 
-    'schema:object': {
-        'auction_and_token_id:nat': 'nat',
-        'bid_amount:mutez': 'mutez',
-        'end_timestamp:timestamp': 'timestamp',
-        'uploader:address': 'address',
-        'voter_amount:nat': 'nat'
-    };
-
-    async create_auction(auction_and_token_id: number, bid_amount: number, end_timestamp: number, uploader: string, voter_amount: number, confirmations = 3) {
+    async create_auction(auction_and_token_id: number, bid_amount: number, end_timestamp: string, uploader: string, voter_amount: number, confirmations = 3) {
         try {
             const call: TransactionWalletOperation | TransactionOperation | undefined
                 = await this.contract?.methodsObject.create_auction({
-                    auction_and_token_id,
-                    bid_amount,
-                    end_timestamp,
-                    uploader,
-                    voter_amount
-                }).send();
+                auction_and_token_id,
+                bid_amount,
+                end_timestamp,
+                uploader,
+                voter_amount
+            }).send();
             const hash: any | undefined = await call?.confirmation(confirmations);
             console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
         } catch (error) {
@@ -239,16 +234,64 @@ async function getAmountInMoneyPool(): Promise<number> {
     return ret;
 }
 
-const fa2Contract = new FA2Contract();
-fa2Contract.Ready.then(() => {
-    console.log('fa2 contract loaded');
-});
+function createTokenMetadata(artworkName: string, minterAddress: string, uploaderAddress: string, blckbookAddress: string, timestamp: string,
+                             artifactAndDisplayUri: string, thumbnailUri: string, mimeType: string, longitude: string, latitude: string) {
+    return {
+        decimals: 0, // klar
+        isBooleanAmount: true,
+        name: artworkName ?? 'Nameless Spot',
+        description: 'A Spot of a Graffiti on the BLCKBOOK',
+        minter: minterAddress,
+        creators: [uploaderAddress, blckbookAddress],
+        date: timestamp,
+        type: 'BLCKBOOK NFT',
+        tags: ['Street-Art', 'Graffiti', 'Art'],
+        language: 'en',
+        artifactUri: artifactAndDisplayUri,
+        displayUri: artifactAndDisplayUri,
+        thumbnailUri, //scaled down version of the asset for wallets and client applications (max size 350x350)",
+        shouldPreferSymbol: false,
+        symbol: 'BLCKBOOK',
+        formats: [
+            {
+                uri: artifactAndDisplayUri,
+                mimeType,
+            }
+        ],
+        attributes: [{
+            name: 'longitude',
+            value: longitude
+        },
+            {
+                name: 'latitude',
+                'value': latitude
+            },
+        ]
+    };
+}
 
+const fa2Contract = new FA2Contract();
+const auctionHouseContract = new AuctionHouseContract();
 const voterMoneyPoolContract = new VoterMoneyPoolContract();
-voterMoneyPoolContract.Ready.then(async () => {
-    console.log('voter money pool contract loaded');
-    // example for adding votes:
-    // await voterMoneyPoolContract.addVotes(1, [adminPublicKey, 'tz1a5TTiks52KuaXRaQw8vVwHuCTr5JtWgPF']);
+
+// this is basically the main functionality
+Promise.all([fa2Contract.Ready, auctionHouseContract.Ready, voterMoneyPoolContract.Ready]).then(async () => {
+    console.log('all contracts loaded');
+    const ipfsUploadCode = 'QmfNemw9hXhYidhEUifUnp9W34dLnALwPwXUczuejMiHfa'; //ToDo: actually upload an image
+    const ipfsThumbnailCode = 'QmfNemw9hXhYidhEUifUnp9W34dLnALwPwXUczuejMiHfa'; //ToDo: actually upload a thumbnail
+    const tokenMetadata = createTokenMetadata('testArtwork', adminPublicKey, adminPublicKey, adminPublicKey, '2021-12-09T17:52:24.005Z',
+        ipfsPrefix + ipfsUploadCode, ipfsUploadCode + ipfsThumbnailCode, 'image/png', '121', '201');
+    const pinataResponse = await pinata.pinJSONToIPFS(tokenMetadata, undefined);
+
+    const currentTokenIndex = await fa2Contract.getCurrentTokenIndex();
+
+    if (currentTokenIndex !== undefined) {
+        await fa2Contract.mint(ipfsPrefix + pinataResponse.IpfsHash, currentTokenIndex, auctionHouseContractAddress, 1);
+        const timestamp = '2021-12-19T00:00:00Z' //ToDo: create a timestamp that is good
+        await auctionHouseContract.create_auction(currentTokenIndex, 1000000, timestamp, adminPublicKey, 2, 1);
+        await voterMoneyPoolContract.addVotes(currentTokenIndex, [adminPublicKey, 'tz1a5TTiks52KuaXRaQw8vVwHuCTr5JtWgPF'], 1);
+        // the voter money pool doesn't have any security... meaning that if the votes are added twice for the same index... we are f....
+    }
 });
 
 // originate(auctionHouseMichelsonCode, initialAuctionHouseStorage); example for origination
