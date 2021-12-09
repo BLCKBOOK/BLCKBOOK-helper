@@ -22,14 +22,17 @@ importKey(
 
 const tokenContractAddress = 'KT1HAtdXKvXqK2He3Xr2xmHQ9cYrxPTL7X9Z';
 const voterMoneyPoolContractAddress = 'KT1Qs5B5b2eo6TqqhEJ3LNzBRSoQahEQK4tZ';
+const auctionHouseContractAddress = 'KT1EzPEVrZKSHpUjaYCGpdFT6o9Sauq6FhjP'
 
 const fa2ContractMichelsonCode = require('../dist/token-contract.json');
 const voterMoneyPoolMichelsonCode = require('../dist/voter_money_pool_contract.json');
-const adminPublicKey = faucet.pkh;
+const auctionHouseMichelsonCode = require('../dist/auction_house_contract.json');
+const adminPublicKey = faucet.pkh; // aka our admin-address
 
 // the initial storage values for the contracts
 const initialFA2Storage = `(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair 0 (Pair {} (Pair {} (Pair {} (Pair False {}))))))`;
 const initialVoterMoneyPoolStorage = '(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair {} (Pair {} {})))';
+const initialAuctionHouseStorage = '(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair "KT1Qs5B5b2eo6TqqhEJ3LNzBRSoQahEQK4tZ" (Pair "KT1HAtdXKvXqK2He3Xr2xmHQ9cYrxPTL7X9Z" (Pair 25 (Pair 60 (Pair 15 (Pair 0 {}))))))))';
 
 const ipfsPrefix = 'ipfs://';
 // ipfs links for the metadata. Uploaded with pinata
@@ -205,3 +208,4 @@ voterMoneyPoolContract.Ready.then(async () => {
     // await voterMoneyPoolContract.addVotes(1, [adminPublicKey, 'tz1a5TTiks52KuaXRaQw8vVwHuCTr5JtWgPF']);
 });
 
+// originate(auctionHouseMichelsonCode, initialAuctionHouseStorage); example for origination
