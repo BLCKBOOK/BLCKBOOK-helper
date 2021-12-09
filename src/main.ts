@@ -34,7 +34,7 @@ pinata.testAuthentication().then((result) => {
 });
 
 const tokenContractAddress = 'KT1HAtdXKvXqK2He3Xr2xmHQ9cYrxPTL7X9Z';
-const voterMoneyPoolContractAddress = 'KT1Qs5B5b2eo6TqqhEJ3LNzBRSoQahEQK4tZ';
+const voterMoneyPoolContractAddress = 'KT1XeA6tZYeBCm7aux3SAPswTuRE72R3VUCW';
 const auctionHouseContractAddress = 'KT1EzPEVrZKSHpUjaYCGpdFT6o9Sauq6FhjP';
 
 const fa2ContractMichelsonCode = require('../dist/token-contract.json');
@@ -50,7 +50,7 @@ const initialAuctionHouseStorage = '(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2"
 const ipfsPrefix = 'ipfs://';
 // ipfs links for the metadata. Uploaded with pinata
 const contractMetadataIpfsKey = 'QmaXB89rnWPU9x2cDzHEy5YPdoK9epzRqgc7Lv8bvUv6ck';
-const voterMoneyPoolMetadataIpfsKey = 'QmVPo1mxMTFSWcmFARMzdt6ieaYuvZj73nQKHNUPaBKsKY';
+const voterMoneyPoolMetadataIpfsKey = 'QmbdCxkLZUxDPVu8JDDbFTHXU1fkdzEy7QsoTBsY8pKzZa';
 
 function originate(code: any, initialStorage: string) {
     Tezos.contract
@@ -65,7 +65,7 @@ function originate(code: any, initialStorage: string) {
         .then((contract) => {
             console.log(`Origination completed.`);
         })
-        .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
+        .catch((error) => console.log(error));
 }
 
 /**
@@ -160,6 +160,50 @@ class AuctionHouseContract extends Contract {
                 uploader,
                 voter_amount
             }).send();
+            const hash: any | undefined = await call?.confirmation(confirmations);
+            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+
+    async set_voter_money_pool_address(new_address: string, confirmations = 3) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined
+                = await this.contract?.methods.set_voter_money_pool_address(new_address).send();
+            const hash: any | undefined = await call?.confirmation(confirmations);
+            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+
+    async set_tokens_contract_address(new_address: string, confirmations = 3) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined
+                = await this.contract?.methods.set_tokens_contract_address(new_address).send();
+            const hash: any | undefined = await call?.confirmation(confirmations);
+            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+
+    async set_blckbook_collector(new_address: string, confirmations = 3) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined
+                = await this.contract?.methods.set_blckbook_collector(new_address).send();
+            const hash: any | undefined = await call?.confirmation(confirmations);
+            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+
+    async end_auction(auction_index: number, confirmations = 3) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined
+                = await this.contract?.methods.end_auction(auction_index).send();
             const hash: any | undefined = await call?.confirmation(confirmations);
             console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
         } catch (error) {
@@ -277,6 +321,7 @@ const voterMoneyPoolContract = new VoterMoneyPoolContract();
 // this is basically the main functionality
 Promise.all([fa2Contract.Ready, auctionHouseContract.Ready, voterMoneyPoolContract.Ready]).then(async () => {
     console.log('all contracts loaded');
+
     const ipfsUploadCode = 'QmfNemw9hXhYidhEUifUnp9W34dLnALwPwXUczuejMiHfa'; //ToDo: actually upload an image
     const ipfsThumbnailCode = 'QmfNemw9hXhYidhEUifUnp9W34dLnALwPwXUczuejMiHfa'; //ToDo: actually upload a thumbnail
     const tokenMetadata = createTokenMetadata('testArtwork', adminPublicKey, adminPublicKey, adminPublicKey, '2021-12-09T17:52:24.005Z',
@@ -287,7 +332,7 @@ Promise.all([fa2Contract.Ready, auctionHouseContract.Ready, voterMoneyPoolContra
 
     if (currentTokenIndex !== undefined) {
         await fa2Contract.mint(ipfsPrefix + pinataResponse.IpfsHash, currentTokenIndex, auctionHouseContractAddress, 1);
-        const timestamp = '2021-12-19T00:00:00Z' //ToDo: create a timestamp that is good
+        const timestamp = '2021-12-19T00:00:00Z'; //ToDo: create a timestamp that is good
         await auctionHouseContract.create_auction(currentTokenIndex, 1000000, timestamp, adminPublicKey, 2, 1);
         await voterMoneyPoolContract.addVotes(currentTokenIndex, [adminPublicKey, 'tz1a5TTiks52KuaXRaQw8vVwHuCTr5JtWgPF'], 1);
         // the voter money pool doesn't have any security... meaning that if the votes are added twice for the same index... we are f....
@@ -295,3 +340,4 @@ Promise.all([fa2Contract.Ready, auctionHouseContract.Ready, voterMoneyPoolContra
 });
 
 // originate(auctionHouseMichelsonCode, initialAuctionHouseStorage); example for origination
+// setContractMetaData(voterMoneyPoolContractAddress, voterMoneyPoolMetadataIpfsKey) // example for setting meta-data
