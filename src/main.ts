@@ -1,4 +1,10 @@
-import {MichelsonMap, TezosToolkit} from '@taquito/taquito';
+import {
+    ContractAbstraction,
+    MichelsonMap,
+    TezosToolkit,
+    TransactionOperation,
+    TransactionWalletOperation
+} from '@taquito/taquito';
 import {faucet} from './faucet';
 import {importKey} from '@taquito/signer';
 import {tzip16, Tzip16Module} from '@taquito/tzip16';
@@ -15,17 +21,20 @@ importKey(
 ).catch((e: any) => console.error(e));
 
 const tokenContractAddress = 'KT1HAtdXKvXqK2He3Xr2xmHQ9cYrxPTL7X9Z';
-const voterMoneyPoolContractAddress = 'KT1Qs5B5b2eo6TqqhEJ3LNzBRSoQahEQK4tZ'
+const voterMoneyPoolContractAddress = 'KT1Qs5B5b2eo6TqqhEJ3LNzBRSoQahEQK4tZ';
 
 const fa2ContractMichelsonCode = require('../dist/token-contract.json');
 const voterMoneyPoolMichelsonCode = require('../dist/voter_money_pool_contract.json');
 const adminPublicKey = faucet.pkh;
-const initialFA2Storage = `(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair 0 (Pair {} (Pair {} (Pair {} (Pair False {}))))))`;
-const initialVoterMoneyPoolStorage = '(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair {} (Pair {} {})))'
-const contractMetadataIpfsKey = 'QmaXB89rnWPU9x2cDzHEy5YPdoK9epzRqgc7Lv8bvUv6ck'
-const ipfsPrefix = 'ipfs://'
-const voterMoneyPoolMetadataIpfsKey = 'QmVPo1mxMTFSWcmFARMzdt6ieaYuvZj73nQKHNUPaBKsKY'
 
+// the initial storage values for the contracts
+const initialFA2Storage = `(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair 0 (Pair {} (Pair {} (Pair {} (Pair False {}))))))`;
+const initialVoterMoneyPoolStorage = '(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair {} (Pair {} {})))';
+
+const ipfsPrefix = 'ipfs://';
+// ipfs links for the metadata. Uploaded with pinata
+const contractMetadataIpfsKey = 'QmaXB89rnWPU9x2cDzHEy5YPdoK9epzRqgc7Lv8bvUv6ck';
+const voterMoneyPoolMetadataIpfsKey = 'QmVPo1mxMTFSWcmFARMzdt6ieaYuvZj73nQKHNUPaBKsKY';
 
 function originate(code: any, initialStorage: string) {
     Tezos.contract
@@ -41,6 +50,81 @@ function originate(code: any, initialStorage: string) {
             console.log(`Origination completed.`);
         })
         .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
+}
+
+/**
+ * abstract class for a contract. Has a ready for initialization so that we can call other methods on it
+ */
+abstract class Contract {
+    public Ready: Promise<void>;
+    protected contract: ContractAbstraction<any> | undefined;
+
+    protected constructor(contractAddress: string) {
+        this.Ready = new Promise((resolve, reject) => {
+            Tezos.contract.at(contractAddress).then(result => {
+                this.contract = result;
+                resolve(undefined);
+            }).catch(reject);
+        });
+    }
+}
+
+class FA2Contract extends Contract {
+
+    constructor() {
+        super(tokenContractAddress);
+    }
+
+    async burn(ownerAddress: string, tokenId: number, confirmations = 3) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined = await this.contract?.methods.burn(ownerAddress, tokenId).send();
+            const hash: any | undefined = await call?.confirmation(confirmations);
+            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+
+    async mint(ipfsLink: string, tokenId: number, ownerAddress: string, confirmations = 3) {
+        const storageMap = new MichelsonMap({
+            prim: 'map',
+            args: [{prim: 'string'}, {prim: 'bytes'}],
+        });
+        storageMap.set('decimals', char2Bytes('0'));
+        storageMap.set('', char2Bytes(ipfsLink));
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined = await this.contract?.methods.mint(
+                ownerAddress, 1, storageMap, tokenId
+            ).send();
+            const hash: any | undefined = await call?.confirmation(confirmations);
+            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+
+        async function getCurrentTokenIndex(): Promise<number> {
+            const contract = await Tezos.contract.at(tokenContractAddress);
+            const storage = await contract.storage();
+            return (storage as any).all_tokens.toNumber() as number;
+        }
+    }
+}
+
+class VoterMoneyPoolContract extends Contract {
+
+    constructor() {
+        super(voterMoneyPoolContractAddress);
+    }
+
+    async addVotes(auctionAndTokenId: number, voterAddresses: string[], confirmations = 3) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined = await this.contract?.methods.add_votes(auctionAndTokenId, voterAddresses).send();
+            const hash: any | undefined = await call?.confirmation(confirmations);
+            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
 }
 
 async function printBalance(address: string) {
@@ -63,54 +147,6 @@ function printContractMethods(contractAddress: string) {
         .catch((error) => console.log(`Error: ${error}`));
 }
 
-function burn(ownerAddress: string, tokenId: number) {
-    Tezos.contract
-        .at(tokenContractAddress)
-        .then((contract) => {
-            console.log(`Trying to burn it ${ownerAddress}, ${tokenId}`);
-            return contract.methods
-                .burn(
-                    ownerAddress, tokenId
-                ).send();
-        })
-        .then((op) => {
-            console.log(`Waiting for ${op.hash} to be confirmed...`);
-            return op.confirmation(3).then(() => op.hash);
-        })
-        .then((hash) => console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`))
-        .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
-}
-
-function mint(ipfsLink: string, tokenId: number, ownerAddress: string) {
-    const storageMap = new MichelsonMap({
-        prim: 'map',
-        args: [{prim: 'string'}, {prim: 'bytes'}],
-    });
-    storageMap.set('decimals', char2Bytes('0'));
-    storageMap.set('', char2Bytes(ipfsLink));
-    Tezos.contract
-        .at(tokenContractAddress)
-        .then((contract) => {
-            console.log('Trying to mint the first thing');
-            return contract.methods
-                .mint(
-                    ownerAddress, 1, storageMap, tokenId
-                ).send();
-        })
-        .then((op) => {
-            console.log(`Waiting for ${op.hash} to be confirmed...`);
-            return op.confirmation(3).then(() => op.hash);
-        })
-        .then((hash) => console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`))
-        .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
-}
-
-async function getCurrentTokenIndex(): Promise<number> {
-    const contract = await Tezos.contract.at(tokenContractAddress);
-    const storage = await contract.storage()
-    return (storage as any).all_tokens.toNumber() as number;
-}
-
 async function setContractMetaData(contractAddress: string, contractIpfsMetadata: string) {
     const contract = await Tezos.contract.at(contractAddress);
     contract.methodsObject.set_metadata({
@@ -131,7 +167,7 @@ async function setContractMetaData(contractAddress: string, contractIpfsMetadata
 });*/
 
 async function testTzip16Metadata(contractAddress: string) {
-    const contract = await Tezos.contract.at(contractAddress, tzip16)
+    const contract = await Tezos.contract.at(contractAddress, tzip16);
     const metadata = await contract.tzip16().getMetadata();
     const views = await contract.tzip16().metadataViews();
     console.log(metadata);
@@ -143,16 +179,29 @@ async function testTzip16Metadata(contractAddress: string) {
  * @ret the count_tokens view which is the current token_index
  */
 async function getCountTokensFromView(): Promise<number> {
-    const contract = await Tezos.contract.at(tokenContractAddress, tzip16)
+    const contract = await Tezos.contract.at(tokenContractAddress, tzip16);
     const views = await contract.tzip16().metadataViews();
     const ret = (await views.count_tokens().executeView()).toNumber();
     return ret;
 }
 
 async function getAmountInMoneyPool(): Promise<number> {
-    const contract = await Tezos.contract.at(voterMoneyPoolContractAddress, tzip16)
+    const contract = await Tezos.contract.at(voterMoneyPoolContractAddress, tzip16);
     const views = await contract.tzip16().metadataViews();
     const ret = (await views.get_balance().executeView(adminPublicKey)).toNumber();
     console.log(ret);
     return ret;
 }
+
+const fa2Contract = new FA2Contract();
+fa2Contract.Ready.then(() => {
+    console.log('fa2 contract loaded');
+});
+
+const voterMoneyPoolContract = new VoterMoneyPoolContract();
+voterMoneyPoolContract.Ready.then(async () => {
+    console.log('voter money pool contract loaded');
+    // example for adding votes:
+    // await voterMoneyPoolContract.addVotes(1, [adminPublicKey, 'tz1a5TTiks52KuaXRaQw8vVwHuCTr5JtWgPF']);
+});
+
