@@ -14,7 +14,8 @@ importKey(
     faucet.activation_code
 ).catch((e: any) => console.error(e));
 
-const tokenContractAddress = 'KT1QALmg4PfA1ZDNYWhmWXMNpZhdwLdNbfMz';
+const tokenContractAddress = 'KT1HAtdXKvXqK2He3Xr2xmHQ9cYrxPTL7X9Z';
+const voterMoneyPoolContractAddress = 'KT1Qs5B5b2eo6TqqhEJ3LNzBRSoQahEQK4tZ'
 
 const fa2ContractMichelsonCode = require('../dist/token-contract.json');
 const voterMoneyPoolMichelsonCode = require('../dist/voter_money_pool_contract.json');
@@ -24,7 +25,7 @@ const initialVoterMoneyPoolStorage = '(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w
 const contractMetadataIpfsKey = 'QmaXB89rnWPU9x2cDzHEy5YPdoK9epzRqgc7Lv8bvUv6ck'
 const ipfsPrefix = 'ipfs://'
 const voterMoneyPoolMetadataIpfsKey = 'QmVPo1mxMTFSWcmFARMzdt6ieaYuvZj73nQKHNUPaBKsKY'
-const voterMoneyPoolContractAddress = 'KT1WdC4Qy9p2Wixfs2M16iwnauUXGAaAZJAV'
+
 
 function originate(code: any, initialStorage: string) {
     Tezos.contract
@@ -155,5 +156,3 @@ async function getAmountInMoneyPool(): Promise<number> {
     console.log(ret);
     return ret;
 }
-
-getAmountInMoneyPool();
