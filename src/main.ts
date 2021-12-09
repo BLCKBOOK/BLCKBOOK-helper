@@ -16,7 +16,7 @@ importKey(
 
 const tokenContractAddress = 'KT1QALmg4PfA1ZDNYWhmWXMNpZhdwLdNbfMz';
 
-const fa2ContractMichelsonCode = require('../dist/contract.json');
+const fa2ContractMichelsonCode = require('../dist/token-contract.json');
 const voterMoneyPoolMichelsonCode = require('../dist/voter_money_pool_contract.json');
 const adminPublicKey = faucet.pkh;
 const initialFA2Storage = `(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair 0 (Pair {} (Pair {} (Pair {} (Pair False {}))))))`;
