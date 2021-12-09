@@ -6,8 +6,10 @@ import {
     TransactionWalletOperation
 } from '@taquito/taquito';
 import {faucet} from './faucet';
+import {pinataKeys} from './pinata-keys';
 import {importKey} from '@taquito/signer';
 import {tzip16, Tzip16Module} from '@taquito/tzip16';
+import pinataSDK from '@pinata/sdk'
 
 const Tezos = new TezosToolkit('https://hangzhounet.api.tez.ie');
 Tezos.addExtension(new Tzip16Module());
@@ -20,16 +22,27 @@ importKey(
     faucet.activation_code
 ).catch((e: any) => console.error(e));
 
+// now do the setup for Pinata
+const pinata = pinataSDK(pinataKeys.key, pinataKeys.secret);
+
+pinata.testAuthentication().then((result) => {
+    //handle successful authentication here
+    console.log(result);
+}).catch((err) => {
+    //handle error here
+    console.log(err);
+});
+
 const tokenContractAddress = 'KT1HAtdXKvXqK2He3Xr2xmHQ9cYrxPTL7X9Z';
 const voterMoneyPoolContractAddress = 'KT1Qs5B5b2eo6TqqhEJ3LNzBRSoQahEQK4tZ';
-const auctionHouseContractAddress = 'KT1EzPEVrZKSHpUjaYCGpdFT6o9Sauq6FhjP'
+const auctionHouseContractAddress = 'KT1EzPEVrZKSHpUjaYCGpdFT6o9Sauq6FhjP';
 
 const fa2ContractMichelsonCode = require('../dist/token-contract.json');
 const voterMoneyPoolMichelsonCode = require('../dist/voter_money_pool_contract.json');
 const auctionHouseMichelsonCode = require('../dist/auction_house_contract.json');
 const adminPublicKey = faucet.pkh; // aka our admin-address
 
-// the initial storage values for the contracts
+// the initial storage values for the contracts. Beware that these have addresses in them!
 const initialFA2Storage = `(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair 0 (Pair {} (Pair {} (Pair {} (Pair False {}))))))`;
 const initialVoterMoneyPoolStorage = '(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair {} (Pair {} {})))';
 const initialAuctionHouseStorage = '(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair "KT1Qs5B5b2eo6TqqhEJ3LNzBRSoQahEQK4tZ" (Pair "KT1HAtdXKvXqK2He3Xr2xmHQ9cYrxPTL7X9Z" (Pair 25 (Pair 60 (Pair 15 (Pair 0 {}))))))))';
@@ -114,7 +127,6 @@ class FA2Contract extends Contract {
 }
 
 class VoterMoneyPoolContract extends Contract {
-
     constructor() {
         super(voterMoneyPoolContractAddress);
     }
@@ -122,6 +134,37 @@ class VoterMoneyPoolContract extends Contract {
     async addVotes(auctionAndTokenId: number, voterAddresses: string[], confirmations = 3) {
         try {
             const call: TransactionWalletOperation | TransactionOperation | undefined = await this.contract?.methods.add_votes(auctionAndTokenId, voterAddresses).send();
+            const hash: any | undefined = await call?.confirmation(confirmations);
+            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+}
+
+class AuctionHouseContract extends Contract {
+    constructor() {
+        super(auctionHouseContractAddress);
+    }
+
+    'schema:object': {
+        'auction_and_token_id:nat': 'nat',
+        'bid_amount:mutez': 'mutez',
+        'end_timestamp:timestamp': 'timestamp',
+        'uploader:address': 'address',
+        'voter_amount:nat': 'nat'
+    };
+
+    async create_auction(auction_and_token_id: number, bid_amount: number, end_timestamp: number, uploader: string, voter_amount: number, confirmations = 3) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined
+                = await this.contract?.methodsObject.create_auction({
+                    auction_and_token_id,
+                    bid_amount,
+                    end_timestamp,
+                    uploader,
+                    voter_amount
+                }).send();
             const hash: any | undefined = await call?.confirmation(confirmations);
             console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
         } catch (error) {

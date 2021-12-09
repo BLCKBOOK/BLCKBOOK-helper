@@ -1,5 +1,6 @@
 /dist/
 /src/faucet.ts
+/src/pinata-keys.ts
 /node_modules/
 /.idea/modules.xml
 /.idea/taquito-stuff.iml
