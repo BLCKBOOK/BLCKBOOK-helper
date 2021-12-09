@@ -1,0 +1,74 @@
+{
+  "name": "BLCKBOOK-VoterMoneyPool",
+  "description": "BLCKBOOK beta implementation of a VoterMoneyPool",
+  "views": [
+    {
+      "name": "get_balance",
+      "pure": true,
+      "description": "This offchain view calculates how much a voter will get from withdrawing",
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "parameter": { "prim": "address" },
+            "returnType": { "prim": "mutez" },
+            "code": [
+              { "prim": "UNPAIR" },
+              { "prim": "PUSH", "args": [ { "prim": "mutez" }, { "int": "0" } ] },
+              { "prim": "DUP", "args": [ { "int": "3" } ] },
+              { "prim": "GET", "args": [ { "int": "5" } ] },
+              { "prim": "DUP", "args": [ { "int": "3" } ] },
+              { "prim": "MEM" },
+              {
+                "prim": "IF",
+                "args": [
+                  [
+                    { "prim": "DUP", "args": [ { "int": "3" } ] },
+                    { "prim": "GET", "args": [ { "int": "5" } ] },
+                    { "prim": "DUP", "args": [ { "int": "3" } ] },
+                    { "prim": "GET" },
+                    { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "567" } ] }, { "prim": "FAILWITH" } ], [] ] },
+                    {
+                      "prim": "ITER",
+                      "args": [
+                        [
+                          { "prim": "DUP", "args": [ { "int": "4" } ] },
+                          { "prim": "GET", "args": [ { "int": "3" } ] },
+                          { "prim": "SWAP" },
+                          { "prim": "DUP" },
+                          { "prim": "DUG", "args": [ { "int": "2" } ] },
+                          { "prim": "MEM" },
+                          {
+                            "prim": "IF",
+                            "args": [
+                              [
+                                { "prim": "DUP", "args": [ { "int": "4" } ] },
+                                { "prim": "GET", "args": [ { "int": "3" } ] },
+                                { "prim": "SWAP" },
+                                { "prim": "GET" },
+                                { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "569" } ] }, { "prim": "FAILWITH" } ], [] ] },
+                                { "prim": "ADD" }
+                              ],
+                              [ { "prim": "DROP" } ]
+                            ]
+                          }
+                        ]
+                      ]
+                    },
+                    { "prim": "SWAP" },
+                    { "prim": "DROP" },
+                    { "prim": "SWAP" },
+                    { "prim": "DROP" }
+                  ],
+                  [ { "prim": "SWAP" }, { "prim": "DROP" }, { "prim": "SWAP" }, { "prim": "DROP" } ]
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "authors": [ "Niels Hanselmann" ],
+  "homepage": "https://blckbook.vote",
+  "source": { "tools": [ "SmartPy" ], "location": "https://github.com/BLCKBOOK/BLCKBOOK-contract" }
+}
