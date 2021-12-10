@@ -35,17 +35,20 @@ pinata.testAuthentication().then((result) => {
 
 const tokenContractAddress = 'KT1HAtdXKvXqK2He3Xr2xmHQ9cYrxPTL7X9Z';
 const voterMoneyPoolContractAddress = 'KT1XeA6tZYeBCm7aux3SAPswTuRE72R3VUCW';
-const auctionHouseContractAddress = 'KT1EzPEVrZKSHpUjaYCGpdFT6o9Sauq6FhjP';
+const auctionHouseContractAddress = 'KT1RG8SzC5exEXedFEpFwjisuAcjjf7TTwNB';
 
-const fa2ContractMichelsonCode = require('../dist/token-contract.json');
-const voterMoneyPoolMichelsonCode = require('../dist/voter_money_pool_contract.json');
-const auctionHouseMichelsonCode = require('../dist/auction_house_contract.json');
+const fa2ContractMichelsonCode = require('../dist/contract-code/token-contract.json');
+const voterMoneyPoolMichelsonCode = require('../dist/contract-code/voter_money_pool_contract.json');
+const auctionHouseMichelsonCode = require('../dist/contract-code/auction_house_contract.json');
 const adminPublicKey = faucet.pkh; // aka our admin-address
+const voterMoneyPoolMetaData = require('../dist/contract-metadata/voter-money-pool-metadata.json');
+const fa2ContractMetaData = require('../dist/contract-metadata/fa2-contract-metadata.json');
+const auctionHouseMetaData = require('../dist/contract-metadata/auction_house-metadata.json');
 
 // the initial storage values for the contracts. Beware that these have addresses in them!
 const initialFA2Storage = `(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair 0 (Pair {} (Pair {} (Pair {} (Pair False {}))))))`;
 const initialVoterMoneyPoolStorage = '(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair {} (Pair {} {})))';
-const initialAuctionHouseStorage = '(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair "KT1Qs5B5b2eo6TqqhEJ3LNzBRSoQahEQK4tZ" (Pair "KT1HAtdXKvXqK2He3Xr2xmHQ9cYrxPTL7X9Z" (Pair 25 (Pair 60 (Pair 15 (Pair 0 {}))))))))';
+const initialAuctionHouseStorage = '(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair "KT1XeA6tZYeBCm7aux3SAPswTuRE72R3VUCW" (Pair "KT1HAtdXKvXqK2He3Xr2xmHQ9cYrxPTL7X9Z" (Pair 25 (Pair 60 (Pair 15 (Pair 0 (Pair {} {})))))))))'
 
 const ipfsPrefix = 'ipfs://';
 // ipfs links for the metadata. Uploaded with pinata (web browser)
@@ -232,11 +235,12 @@ function printContractMethods(contractAddress: string) {
         .catch((error) => console.log(`Error: ${error}`));
 }
 
-async function setContractMetaData(contractAddress: string, contractIpfsMetadata: string) {
+async function setContractMetaData(contractAddress: string, metadataJson: any, nameOfThePinataPin: string) {
+    const pinataResponse = await pinata.pinJSONToIPFS(metadataJson, {pinataMetadata: {name: nameOfThePinataPin}});
     const contract = await Tezos.contract.at(contractAddress);
     contract.methodsObject.set_metadata({
         k: '',
-        v: char2Bytes(ipfsPrefix + contractIpfsMetadata)
+        v: char2Bytes(ipfsPrefix + pinataResponse.IpfsHash)
     }).send().then((op) => {
         console.log(`Waiting for ${op.hash} to be confirmed...`);
         return op.confirmation(3).then(() => op.hash);
@@ -276,6 +280,15 @@ async function getAmountInMoneyPool(): Promise<number> {
     const views = await contract.tzip16().metadataViews();
     const ret = (await views.get_balance().executeView(adminPublicKey)).toNumber();
     console.log(ret);
+    return ret;
+}
+
+async function getExpiredAuctions(): Promise<number> {
+    const contract = await Tezos.contract.at(auctionHouseContractAddress, tzip16);
+    const views = await contract.tzip16().metadataViews();
+    const date = '2021-12-10T00:00:00Z' // ToDo: another date String... please figure me out
+    const ret = (await views.get_expired_auctions().executeView(date));
+    console.log((ret as Array<any>).map(number => number.toNumber()))
     return ret;
 }
 
@@ -320,7 +333,7 @@ const auctionHouseContract = new AuctionHouseContract();
 const voterMoneyPoolContract = new VoterMoneyPoolContract();
 
 // this is basically the main functionality
-Promise.all([fa2Contract.Ready, auctionHouseContract.Ready, voterMoneyPoolContract.Ready]).then(async () => {
+/*Promise.all([fa2Contract.Ready, auctionHouseContract.Ready, voterMoneyPoolContract.Ready]).then(async () => {
     console.log('all contracts loaded');
 
     const ipfsUploadCode = 'QmfNemw9hXhYidhEUifUnp9W34dLnALwPwXUczuejMiHfa'; //ToDo: actually upload an image
@@ -338,7 +351,12 @@ Promise.all([fa2Contract.Ready, auctionHouseContract.Ready, voterMoneyPoolContra
         await voterMoneyPoolContract.addVotes(currentTokenIndex, [adminPublicKey, 'tz1a5TTiks52KuaXRaQw8vVwHuCTr5JtWgPF'], 1);
         // the voter money pool doesn't have any security... meaning that if the votes are added twice for the same index... we are f....
     }
-});
+});*/
 
-// originate(auctionHouseMichelsonCode, initialAuctionHouseStorage); example for origination
-// setContractMetaData(voterMoneyPoolContractAddress, voterMoneyPoolMetadataIpfsKey) // example for setting meta-data
+
+//originate(auctionHouseMichelsonCode, initialAuctionHouseStorage);
+//setContractMetaData(voterMoneyPoolContractAddress, voterMoneyPoolMetaData, 'voterMoneyPoolMetaData') // example for setting meta-data
+//setContractMetaData(auctionHouseContractAddress, auctionHouseMetaData, 'auctionHouseMetaData')
+// setContractMetaData(tokenContractAddress, fa2ContractMetaData, 'tokenContractMetaData')
+
+getExpiredAuctions()
