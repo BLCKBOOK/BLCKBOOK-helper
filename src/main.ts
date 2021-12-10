@@ -48,7 +48,7 @@ const initialVoterMoneyPoolStorage = '(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w
 const initialAuctionHouseStorage = '(Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair "KT1Qs5B5b2eo6TqqhEJ3LNzBRSoQahEQK4tZ" (Pair "KT1HAtdXKvXqK2He3Xr2xmHQ9cYrxPTL7X9Z" (Pair 25 (Pair 60 (Pair 15 (Pair 0 {}))))))))';
 
 const ipfsPrefix = 'ipfs://';
-// ipfs links for the metadata. Uploaded with pinata
+// ipfs links for the metadata. Uploaded with pinata (web browser)
 const contractMetadataIpfsKey = 'QmaXB89rnWPU9x2cDzHEy5YPdoK9epzRqgc7Lv8bvUv6ck';
 const voterMoneyPoolMetadataIpfsKey = 'QmbdCxkLZUxDPVu8JDDbFTHXU1fkdzEy7QsoTBsY8pKzZa';
 
@@ -270,6 +270,7 @@ async function getCountTokensFromView(): Promise<number> {
     return ret;
 }
 
+// ToDo: refactor me as contract method
 async function getAmountInMoneyPool(): Promise<number> {
     const contract = await Tezos.contract.at(voterMoneyPoolContractAddress, tzip16);
     const views = await contract.tzip16().metadataViews();
