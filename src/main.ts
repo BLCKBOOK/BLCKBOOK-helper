@@ -1,20 +1,30 @@
-import {ContractAbstraction, ContractProvider, TezosToolkit} from '@taquito/taquito';
-import {faucet} from './faucet';
+import {faucet, user1, user2} from './faucet';
 import {pinataKeys} from './pinata-keys';
-import {importKey} from '@taquito/signer';
-import {Tzip16Module} from '@taquito/tzip16';
+import {importKey, InMemorySigner} from '@taquito/signer';
+import {char2Bytes, Tzip16Module} from '@taquito/tzip16';
 import pinataSDK from '@pinata/sdk';
+import {
+    ContractAbstraction,
+    ContractProvider,
+    MichelsonMap,
+    TezosToolkit,
+    TransactionOperation,
+    TransactionWalletOperation
+} from '@taquito/taquito';
+import {Originator} from './originator';
+import {TheVoteContract} from './contracts/the_vote_contract';
+import {
+    auctionHouseContractAddress,
+    bankContractAddress,
+    sprayContractAddress,
+    theVoteContractAddress, tokenContractAddress, voterMoneyPoolContractAddress
+} from './constants';
+import {BankContract} from './contracts/bank_contract';
+import {AuctionHouseContract} from './contracts/auction_house_contract';
+import {FA2TokenContract} from './contracts/fa2_token_contract';
+import {VoterMoneyPoolContract} from './contracts/voter_money_pool_contract';
 
-const Tezos = new TezosToolkit('https://hangzhounet.api.tez.ie');
-Tezos.addExtension(new Tzip16Module());
 
-importKey(
-    Tezos,
-    faucet.email,
-    faucet.password,
-    faucet.mnemonic.join(' '),
-    faucet.activation_code
-).catch((e: any) => console.error(e));
 
 // now do the setup for Pinata
 const pinata = pinataSDK(pinataKeys.key, pinataKeys.secret);
@@ -27,107 +37,105 @@ pinata.testAuthentication().then((result) => {
     console.log(err);
 });
 
-const tokenContractAddress = 'KT18tsEcP2KoD3U4EdMUderfmxyWBzgo2QF2';
-const voterMoneyPoolContractAddress = 'KT1VxugM5e8sbYza6zL1V6c8cJthyrVKRrEj';
-const auctionHouseContractAddress = 'KT1EP3cZPv8tCqCRtuVGwkGHL7JagUigHktw';
-
-
-/*const tokenContractAddress = 'KT1HAtdXKvXqK2He3Xr2xmHQ9cYrxPTL7X9Z';
-const voterMoneyPoolContractAddress = 'KT1XeA6tZYeBCm7aux3SAPswTuRE72R3VUCW';
-const auctionHouseContractAddress = 'KT1RG8SzC5exEXedFEpFwjisuAcjjf7TTwNB';
-const withoutMinTimeAuctionContractAddress = 'KT1Jaasrh4vHoAKaMm8WAhtRTdyuHVVkQwzw'*/
-
-const fa2ContractMichelsonCode = require('../dist/contract-code/token-contract.json');
-const voterMoneyPoolMichelsonCode = require('../dist/contract-code/voter_money_pool_contract.json');
-const auctionHouseMichelsonCode = require('../dist/contract-code/auction_house_contract.json');
-const adminPublicKey = faucet.pkh; // aka our admin-address
-const voterMoneyPoolMetaData = require('../dist/contract-metadata/voter-money-pool-metadata.json');
-const fa2ContractMetaData = require('../dist/contract-metadata/fa2-contract-metadata.json');
-const auctionHouseMetaData = require('../dist/contract-metadata/auction_house-metadata.json');
-const auctionHouseMichelsonCodeWithoutMinTime = require('../dist/contract-code/auction_house_without_min_time_contract.json');
-
-const tokenMetadataIPFSHASH = 'QmSRcEPjcSYe2gfzxy4XFcALqGW5Qs43wDxvGM5WJ7YdSL';
-const voterMoneyPoolMetadataIPFSHASH = 'QmfXoxCxWx1y5ZsBgjv1o44RCLWr7kY2UEPmGY53BZSSt5';
-const auctionHouseMetadataIPFSHASH = 'QmcFwyQrbC4T9PssGbEgpSuH4RM486jbb7aj4xUD6RqSNU';
-
-// the initial storage values for the contracts. Beware that these have addresses in them!
-const initialFA2Storage = `(Pair "${adminPublicKey}" (Pair 0 (Pair {} (Pair {} (Pair {} (Pair False {}))))))`;
-const initialVoterMoneyPoolStorage = `(Pair "${adminPublicKey}" (Pair {} (Pair {} {})))`;
-
-function getInitialAuctionHouseStorage(tokenAddress: string, voterMoneyPoolAddress: string): string {
-    return `(Pair "${adminPublicKey}" (Pair "tz1PEbaFp9jE6syH5xg29YRegbwLLehzK3w2" (Pair "${voterMoneyPoolAddress}" (Pair "${tokenAddress}" (Pair 25 (Pair 60 (Pair 15 (Pair 0 (Pair {} {})))))))))`;
-}
 
 const ipfsPrefix = 'ipfs://';
 
-// ipfs links for the metadata. Uploaded with pinata (web browser)
-
-async function originate(code: any, initialStorage: string): Promise<ContractAbstraction<ContractProvider>> {
-    const origination = await Tezos.contract
-        .originate({
-            code: code,
-            init: initialStorage,
-        });
-    const contract = await origination.contract(2);
-    return contract;
+// This will then probably be needed for the activation of multiple accounts.
+// Somehow I need a user-management
+async function activateAccount() {
 }
 
-function char2Bytes(str: string) {
-    return Buffer.from(str, 'utf8').toString('hex');
+async function main() {
+    const anotherNetwork = 'https://ghostnet.smartpy.io';
+    const rpc = 'https://rpc.ghostnet.teztnets.xyz';
+    const yetAnotherRpc = 'https://ghostnet.ecadinfra.com'
+
+    const tezos = new TezosToolkit(rpc);
+
+    tezos.setSignerProvider(InMemorySigner.fromFundraiser(faucet.email, faucet.password, faucet.mnemonic.join(' ')));
+
+    tezos.addExtension(new Tzip16Module());
+
+    importKey(
+        tezos,
+        faucet.email,
+        faucet.password,
+        faucet.mnemonic.join(' '),
+        faucet.activation_code
+    ).catch((e: any) => console.error(e));
+
+
+    const vote = new TheVoteContract(tezos, theVoteContractAddress);
+    await vote.ready;
+
+    const bank = new BankContract(tezos, bankContractAddress);
+    await bank.ready;
+
+    const auctionHouse = new AuctionHouseContract(tezos, auctionHouseContractAddress);
+    await auctionHouse.ready;
+
+    const fa2 = new FA2TokenContract(tezos, tokenContractAddress);
+    await fa2.ready;
+
+    const voterMoneyPool = new VoterMoneyPoolContract(tezos, voterMoneyPoolContractAddress);
+    await voterMoneyPool.ready;
+
+/*    await bank.setNewPeriod();*/
+
+    await bank.canWithdraw(faucet.pkh);
+    await bank.canWithdraw(user1.pkh);
+    await bank.canWithdraw(user2.pkh);
+
+   /* the_vote.set_spray_contract(spray.address).run(sender=admin)
+    the_vote.set_spray_bank_address(bank.address).run(sender=admin)
+    bank.set_the_vote_address(the_vote.address).run(sender=admin)
+
+    auction_house.set_administrator(the_vote.address).run(sender=admin)
+    voter_money_pool.set_administrator(the_vote.address).run(sender=admin)
+    fa2.set_administrator(the_vote.address).run(sender=admin)*/
+
+
+    // then find out about the user-stuff
 }
 
-async function setContractMetaDataWithHash(contractAddress: string, ipfsHash: string) {
-    const contract = await Tezos.contract.at(contractAddress);
-    contract.methodsObject.set_metadata({
-        k: '',
-        v: char2Bytes(ipfsPrefix + ipfsHash)
-    }).send().then((op) => {
-        console.log(`Waiting for ${op.hash} to be confirmed...`);
-        return op.confirmation(2).then(() => op.hash);
-    })
-        .then((hash) => console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`))
-        .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
-}
+main().then(() => console.log('all successful'));
 
-async function setContractMetaData(contractAddress: string, metadataJson: any, nameOfThePinataPin: string) {
-    const pinataResponse = await pinata.pinJSONToIPFS(metadataJson, {pinataMetadata: {name: nameOfThePinataPin}});
-    const contract = await Tezos.contract.at(contractAddress);
-    contract.methodsObject.set_metadata({
-        k: '',
-        v: char2Bytes(ipfsPrefix + pinataResponse.IpfsHash)
-    }).send().then((op) => {
-        console.log(`Waiting for ${op.hash} to be confirmed...`);
-        return op.confirmation(3).then(() => op.hash);
-    })
-        .then((hash) => console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`))
-        .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
-}
+/*
+function activateFaucetKey() {
+    const {pkh, activation_code} = faucet;
 
-async function originateAllContracts() {
-    const tokenContract = await originate(fa2ContractMichelsonCode, initialFA2Storage);
-    console.log(tokenContract.address);
-    const voterMoneyPoolContract = await originate(voterMoneyPoolMichelsonCode, initialVoterMoneyPoolStorage);
-    console.log(voterMoneyPoolContract.address);
-    const auctionHouseContract = await originate(auctionHouseMichelsonCodeWithoutMinTime, getInitialAuctionHouseStorage(tokenContract.address, voterMoneyPoolContract.address));
-    console.log(auctionHouseContract.address);
     try {
-        await setContractMetaDataWithHash(voterMoneyPoolContractAddress, voterMoneyPoolMetadataIPFSHASH); // example for setting meta-data
-        await setContractMetaDataWithHash(auctionHouseContractAddress, auctionHouseMetadataIPFSHASH);
-        await setContractMetaDataWithHash(tokenContractAddress, tokenMetadataIPFSHASH);
-    } catch (error) {
-        console.log(error);
+        const operation = await tezos.tz.activate(pkh, activation_code);
+        await operation.confirmation(2);
+    } catch (e) {
+        console.log(e);
     }
-    console.log(`token: ${tokenContract.address}`);
-    console.log(`voterMoneyPool: ${voterMoneyPoolContract.address}`);
-    console.log(`auctionHouse: ${auctionHouseContract.address}`);
 }
+*/
 
-// originateAllContracts().then(() => console.log('all successful'));
+/*
+    TODO:
+      - check out batch-transfers
+      - restructure this entire file into multiple files with classes for all contracts (see "oldMethods")
+      - write a method that deploys all contracts, sets the cyclic dependencies and prints their addresses for easy usage
+      - read into estimation of costs
+      - maybe run an own tezos-node on the ubuntu subsystem? or is that like total and utter overkill
+        could I even connect such a node to taquito to run the tests?
+      -
+ */
 
-// originate(auctionHouseMichelsonCodeWithoutMinTime, initialAuctionHouseStorage);
-// originate(fa2ContractMichelsonCode, initialFA2Storage);
 
+/**
+ * TODO - Restructuring
+ * We should simulate actual usage of the contracts. Find out whether Taquito-Scripts can generate users, save their data and log-in as them
+ * The contract abstractions probably are per-user basis as the login into Taquito is per-User
+ *  can this be changed easily or do I need to create sub-scripts that get called?
+ * Of course the usual tests just are for the admin and not anyone else.
+ */
 
-/*printContractMethods(auctionHouseContractAddress);
-
-getExpiredAuctions()*/
+/*
+ TODO
+ user-management. Somehow I need a lot of faucet files or something and be able to reload them or from them.
+ Also I need a way to see if a deadline has passed and if it has passed then execute something
+ Probably my file s
+ */

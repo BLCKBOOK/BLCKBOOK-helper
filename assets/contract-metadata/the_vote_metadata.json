@@ -1,0 +1,11 @@
+{
+  "name": "BLCKBOOK The Vote",
+  "description": "BLCKBOOK The Vote beta implementation. Using SmartPy.\n\n",
+  "version": "0.1",
+  "views": [],
+  "interfaces": [],
+  "authors": [ "Niels Hanselmann" ],
+  "homepage": "https://blckbook.vote",
+  "source": { "tools": [ "SmartPy" ], "location": "https://github.com/BLCKBOOK/BLCKBOOK-contract" },
+  "permissions": {}
+}

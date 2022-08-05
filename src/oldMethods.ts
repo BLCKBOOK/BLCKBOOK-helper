@@ -2,163 +2,6 @@
 import {ContractAbstraction, MichelsonMap, TransactionOperation, TransactionWalletOperation} from '@taquito/taquito';
 import {tzip16} from '@taquito/tzip16';
 
-/!**
- * abstract class for a contract. Has a ready for initialization so that we can call other methods on it
- *!/
-abstract class Contract {
-    public Ready: Promise<void>;
-    protected contract: ContractAbstraction<any> | undefined;
-
-    protected constructor(contractAddress: string) {
-        this.Ready = new Promise((resolve, reject) => {
-            Tezos.contract.at(contractAddress).then(result => {
-                this.contract = result;
-                resolve(undefined);
-            }).catch(reject);
-        });
-    }
-}
-
-class FA2Contract extends Contract {
-
-    constructor() {
-        super(tokenContractAddress);
-    }
-
-    async burn(ownerAddress: string, tokenId: number, confirmations = 3) {
-        try {
-            const call: TransactionWalletOperation | TransactionOperation | undefined = await this.contract?.methods.burn(ownerAddress, tokenId).send();
-            const hash: any | undefined = await call?.confirmation(confirmations);
-            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
-        } catch (error) {
-            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
-        }
-    }
-
-    async mint(ipfsLink: string, tokenId: number, ownerAddress: string, confirmations = 3) {
-        const storageMap = new MichelsonMap({
-            prim: 'map',
-            args: [{prim: 'string'}, {prim: 'bytes'}],
-        });
-        storageMap.set('decimals', char2Bytes('0'));
-        storageMap.set('', char2Bytes(ipfsLink));
-        try {
-            const call: TransactionWalletOperation | TransactionOperation | undefined = await this.contract?.methods.mint(
-                ownerAddress, 1, storageMap, tokenId
-            ).send();
-            const hash: any | undefined = await call?.confirmation(confirmations);
-            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
-        } catch (error) {
-            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
-        }
-    }
-
-    async getCurrentTokenIndex(): Promise<number | undefined> {
-        try {
-            const storage = await this.contract?.storage();
-            return (storage as any).all_tokens.toNumber() as number;
-        } catch (error) {
-            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
-        }
-    }
-
-    async printStorage(): Promise<number | undefined> {
-        try {
-            const storage = await this.contract?.storage();
-            /!*console.log(storage);*!/
-            console.log(await (storage as any).token_metadata.get(2005));
-            return (storage as any).all_tokens.toNumber() as number;
-        } catch (error) {
-            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
-        }
-    }
-}
-
-class VoterMoneyPoolContract extends Contract {
-    constructor() {
-        super(voterMoneyPoolContractAddress);
-    }
-
-    async addVotes(auctionAndTokenId: number, voterAddresses: string[], confirmations = 3) {
-        try {
-            const call: TransactionWalletOperation | TransactionOperation | undefined = await this.contract?.methods.add_votes(auctionAndTokenId, voterAddresses).send();
-            const hash: any | undefined = await call?.confirmation(confirmations);
-            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
-        } catch (error) {
-            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
-        }
-    }
-}
-
-class AuctionHouseContract extends Contract {
-    constructor() {
-        super(auctionHouseContractAddress);
-    }
-
-    async create_auction(auction_and_token_id: number, bid_amount: number, end_timestamp: string, uploader: string, voter_amount: number, confirmations = 3) {
-        try {
-            const call: TransactionWalletOperation | TransactionOperation | undefined
-                = await this.contract?.methodsObject.create_auction({
-                auction_and_token_id,
-                bid_amount,
-                end_timestamp,
-                uploader,
-                voter_amount
-            }).send();
-            const hash: any | undefined = await call?.confirmation(confirmations);
-            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
-        } catch (error) {
-            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
-        }
-    }
-
-    async set_voter_money_pool_address(new_address: string, confirmations = 3) {
-        try {
-            const call: TransactionWalletOperation | TransactionOperation | undefined
-                = await this.contract?.methods.set_voter_money_pool_address(new_address).send();
-            const hash: any | undefined = await call?.confirmation(confirmations);
-            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
-        } catch (error) {
-            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
-        }
-    }
-
-    async set_tokens_contract_address(new_address: string, confirmations = 3) {
-        try {
-            const call: TransactionWalletOperation | TransactionOperation | undefined
-                = await this.contract?.methods.set_tokens_contract_address(new_address).send();
-            const hash: any | undefined = await call?.confirmation(confirmations);
-            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
-        } catch (error) {
-            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
-        }
-    }
-
-    async set_blckbook_collector(new_address: string, confirmations = 3) {
-        try {
-            const call: TransactionWalletOperation | TransactionOperation | undefined
-                = await this.contract?.methods.set_blckbook_collector(new_address).send();
-            const hash: any | undefined = await call?.confirmation(confirmations);
-            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
-        } catch (error) {
-            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
-        }
-    }
-
-    async end_auction(auction_index: number, confirmations = 3) {
-        try {
-            const call: TransactionWalletOperation | TransactionOperation | undefined
-                = await this.contract?.methods.end_auction(
-                auction_index).send();
-            const hash: any | undefined = await call?.confirmation(confirmations);
-            console.log(`Operation injected: https://hangzhou.tzstats.com/${hash}`);
-        } catch (error) {
-            console.log(error);
-            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
-        }
-    }
-}
-
 async function printBalance(address: string) {
     const balance = await Tezos.tz
         .getBalance(address);
@@ -177,14 +20,6 @@ function printContractMethods(contractAddress: string) {
         .catch((error) => console.log(`Error: ${error}`));
 }
 
-
-
-/!*getCurrentTokenIndex().then(tokenIndex => {
-    for (let i = 0; i < 2; i++) {
-        mint('no real link... sorry', i + tokenIndex, adminPublicKey);
-    } // this does not work to mint multiple tokens as the number isn't updated in the storage, when the contract-call is made
-});*!/
-
 async function testTzip16Metadata(contractAddress: string) {
     const contract = await Tezos.contract.at(contractAddress, tzip16);
     const metadata = await contract.tzip16().getMetadata();
@@ -201,24 +36,6 @@ async function getCountTokensFromView(): Promise<number> {
     const contract = await Tezos.contract.at(tokenContractAddress, tzip16);
     const views = await contract.tzip16().metadataViews();
     const ret = (await views.count_tokens().executeView()).toNumber();
-    return ret;
-}
-
-// ToDo: refactor me as contract method
-async function getAmountInMoneyPool(): Promise<number> {
-    const contract = await Tezos.contract.at(voterMoneyPoolContractAddress, tzip16);
-    const views = await contract.tzip16().metadataViews();
-    const ret = (await views.get_balance().executeView(adminPublicKey)).toNumber();
-    console.log(ret);
-    return ret;
-}
-
-async function getExpiredAuctions(): Promise<number> {
-    const contract = await Tezos.contract.at(auctionHouseContractAddress, tzip16);
-    const views = await contract.tzip16().metadataViews();
-    const date = new Date().toISOString();
-    const ret = (await views.get_expired_auctions().executeView(date));
-    console.log((ret as Array<any>).map(number => number.toNumber()));
     return ret;
 }
 

@@ -1,0 +1,147 @@
+{
+  "version": "1.0.0",
+  "description": "This is an adapted  minimal implementation of FA2 (TZIP-012) using SmartPy. It is used for the $PRAY-Token",
+  "interfaces": [ "TZIP-012", "TZIP-016" ],
+  "authors": [ "SmartPy <https://smartpy.io/#contact>" ],
+  "homepage": "https://smartpy.io/ide?template=fa2_fungible_minimal.py",
+  "source": { "tools": [ "SmartPy" ], "location": "https://gitlab.com/SmartPy/smartpy/-/raw/master/python/templates/fa2_fungible_minimal.py" },
+  "permissions": { "operator": "owner-or-operator-transfer", "receiver": "owner-no-hook", "sender": "owner-no-hook" },
+  "views": [
+    {
+      "name": "all_tokens",
+      "pure": true,
+      "description": "(Onchain view) Return the list of all the `token_id` known to the contract.",
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "returnType": { "prim": "list", "args": [ { "prim": "nat" } ] },
+            "code": [
+              { "prim": "DUP" },
+              { "prim": "CAR" },
+              { "prim": "GET", "args": [ { "int": "4" } ] },
+              { "prim": "NIL", "args": [ { "prim": "nat" } ] },
+              { "prim": "SWAP" },
+              { "prim": "PUSH", "args": [ { "prim": "nat" }, { "int": "0" } ] },
+              { "prim": "DUP" },
+              { "prim": "DUP", "args": [ { "int": "3" } ] },
+              { "prim": "COMPARE" },
+              { "prim": "GT" },
+              {
+                "prim": "LOOP",
+                "args": [
+                  [
+                    { "prim": "DUP" },
+                    { "prim": "DIG", "args": [ { "int": "3" } ] },
+                    { "prim": "SWAP" },
+                    { "prim": "CONS" },
+                    { "prim": "DUG", "args": [ { "int": "2" } ] },
+                    { "prim": "PUSH", "args": [ { "prim": "nat" }, { "int": "1" } ] },
+                    { "prim": "ADD" },
+                    { "prim": "DUP" },
+                    { "prim": "DUP", "args": [ { "int": "3" } ] },
+                    { "prim": "COMPARE" },
+                    { "prim": "GT" }
+                  ]
+                ]
+              },
+              { "prim": "DROP", "args": [ { "int": "2" } ] },
+              { "prim": "SWAP" },
+              { "prim": "DROP" },
+              { "prim": "NIL", "args": [ { "prim": "nat" } ] },
+              { "prim": "SWAP" },
+              { "prim": "ITER", "args": [ [ { "prim": "CONS" } ] ] }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "get_balance",
+      "pure": true,
+      "description": "(Onchain view) Return the balance of an address for the specified `token_id`.",
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "parameter": { "prim": "pair", "args": [ { "prim": "address", "annots": [ "%owner" ] }, { "prim": "nat", "annots": [ "%token_id" ] } ] },
+            "returnType": { "prim": "nat" },
+            "code": [
+              { "prim": "UNPAIR" },
+              { "prim": "SWAP" },
+              { "prim": "DUP" },
+              { "prim": "DUG", "args": [ { "int": "2" } ] },
+              { "prim": "CAR" },
+              { "prim": "GET", "args": [ { "int": "4" } ] },
+              { "prim": "SWAP" },
+              { "prim": "DUP" },
+              { "prim": "DUG", "args": [ { "int": "2" } ] },
+              { "prim": "CDR" },
+              { "prim": "COMPARE" },
+              { "prim": "LT" },
+              { "prim": "IF", "args": [ [], [ { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "FA2_TOKEN_UNDEFINED" } ] }, { "prim": "FAILWITH" } ] ] },
+              { "prim": "SWAP" },
+              { "prim": "CAR" },
+              { "prim": "CAR" },
+              { "prim": "CDR" },
+              { "prim": "SWAP" },
+              { "prim": "GET" },
+              { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "nat" }, { "int": "0" } ] } ], [] ] }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "is_operator",
+      "pure": true,
+      "description": "(Onchain view) Return whether `operator` is allowed to transfer `token_id` tokens\n        owned by `owner`.",
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "parameter": {
+              "prim": "pair",
+              "args": [
+                { "prim": "address", "annots": [ "%owner" ] },
+                { "prim": "pair", "args": [ { "prim": "address", "annots": [ "%operator" ] }, { "prim": "nat", "annots": [ "%token_id" ] } ] }
+              ]
+            },
+            "returnType": { "prim": "bool" },
+            "code": [ { "prim": "UNPAIR" }, { "prim": "SWAP" }, { "prim": "GET", "args": [ { "int": "3" } ] }, { "prim": "CAR" }, { "prim": "SWAP" }, { "prim": "MEM" } ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "total_supply",
+      "pure": true,
+      "description": "(Onchain view) Return the total number of tokens for the given `token_id` if known or\n        fail if not.",
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "parameter": { "prim": "nat" },
+            "returnType": { "prim": "nat" },
+            "code": [
+              { "prim": "UNPAIR" },
+              { "prim": "SWAP" },
+              { "prim": "DUP" },
+              { "prim": "DUG", "args": [ { "int": "2" } ] },
+              { "prim": "CAR" },
+              { "prim": "GET", "args": [ { "int": "4" } ] },
+              { "prim": "SWAP" },
+              { "prim": "DUP" },
+              { "prim": "DUG", "args": [ { "int": "2" } ] },
+              { "prim": "COMPARE" },
+              { "prim": "LT" },
+              { "prim": "IF", "args": [ [], [ { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "FA2_TOKEN_UNDEFINED" } ] }, { "prim": "FAILWITH" } ] ] },
+              { "prim": "SWAP" },
+              { "prim": "GET", "args": [ { "int": "3" } ] },
+              { "prim": "CDR" },
+              { "prim": "SWAP" },
+              { "prim": "GET" },
+              { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "nat" }, { "int": "0" } ] } ], [] ] }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

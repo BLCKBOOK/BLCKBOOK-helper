@@ -1,8 +1,13 @@
 /dist/
 /src/faucet.ts
+/src/old_faucet.ts
 /src/pinata-keys.ts
 /node_modules/
 /.idea/modules.xml
 /.idea/taquito-stuff.iml
 /.idea/vcs.xml
 /.idea/jsLibraryMappings.xml
+/src/ghostnet.json
+/src/ghostnet1.json
+/src/ghostnet2.json
+/src/ghostnet3.json
