@@ -1,5 +1,13 @@
-import {MichelCodecParser, TezosToolkit, TransactionOperation, TransactionWalletOperation} from '@taquito/taquito';
+import {
+    MichelCodecParser,
+    MichelsonMap,
+    TezosToolkit,
+    TransactionOperation,
+    TransactionWalletOperation
+} from '@taquito/taquito';
 import {Contract} from './contract';
+import {char2Bytes} from '@taquito/tzip16';
+import assert from 'assert';
 
 export class SprayContract extends Contract {
 
@@ -7,18 +15,40 @@ export class SprayContract extends Contract {
         super(tezos, address);
     }
 
-  /*  async mint(receiver: string, amount: number, variant : 'existing' | 'new', id?: number, metadata?: string) {
+    // Was only used to get the parameters but kept in the code to know how to get it
+    async getMintParameter() {
+        const ret = await this.contract?.methodsObject.mint().getSignature();
+        console.log(ret);
+        console.log(ret.token);
+    }
+
+    async mint(receiver: string, amount: number, variant : 'existing' | 'new', id?: number, metadata?: string) {
         try {
-            // ToDo: fix this!
-            const token = MichelCodecParser()
+            let token;
+            if (variant === 'new') {
+                assert(metadata);
+                const storageMap = new MichelsonMap({
+                    prim: 'map',
+                    args: [{prim: 'string'}, {prim: 'bytes'}],
+                });
+                storageMap.set('decimals', char2Bytes('0'));
+                storageMap.set('', char2Bytes(metadata));
+
+                token = {new: storageMap};
+                   /* { existing: 'nat', new: { map: { key: 'string', value: 'bytes' } } }*/
+            }
+            else {
+                assert(id);
+                token = {existing: id};
+            }
 
             const call: TransactionWalletOperation | TransactionOperation | undefined
-                = await this.contract?.methodsObject.mint({receiver, amount, token}).send();
+                = await this.contract?.methodsObject.mint({to_: receiver, amount: amount, token: token}).send();
             const hash: any | undefined = await call?.confirmation(2);
             console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
         } catch (error) {
             console.log(`Error: ${JSON.stringify(error, null, 2)}`);
         }
-    }*/
+    }
 }
 
