@@ -64,7 +64,7 @@ export class BankContract extends Contract {
         }
     }
 
-    async withdraw(amount: number) {
+    async withdraw() {
         try {
             const call: TransactionWalletOperation | TransactionOperation | undefined
                 = await this.contract?.methods.withdraw().send();
@@ -77,7 +77,7 @@ export class BankContract extends Contract {
 
     async canWithdraw(withdrawer: string): Promise<any> {
         try {
-            const viewResult = await this.contract?.contractViews.can_withdraw().executeView({ viewCaller: withdrawer })
+            const viewResult = await this.contract?.contractViews.can_withdraw().executeView({ viewCaller: withdrawer, source: withdrawer})
             console.log(`View Result: ${viewResult}`);
             return viewResult;
         } catch (error) {
