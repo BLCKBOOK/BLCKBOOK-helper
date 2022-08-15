@@ -18,6 +18,8 @@
     "@pinata/sdk": "^1.1.26",
     "@taquito/signer": "^13.0.1",
     "@taquito/taquito": "^13.0.1",
-    "@taquito/tzip16": "^13.0.1"
+    "@taquito/tzip16": "^13.0.1",
+    "@types/node-fetch": "^2.6.2",
+    "node-fetch": "^2.6.7"
   }
 }

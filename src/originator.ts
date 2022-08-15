@@ -1,6 +1,6 @@
 import {ContractAbstraction, ContractProvider, TezosToolkit} from '@taquito/taquito';
 import {char2Bytes} from '@taquito/tzip16';
-import {faucet} from './faucet';
+import {admin} from './faucet';
 import {ipfsPrefix} from './constants';
 
 export class Originator {
@@ -17,7 +17,7 @@ export class Originator {
     private theVoteMichelsonCode = require('../assets/contract-code/the_vote.json');
     private sprayMichelsonCode = require('../assets/contract-code/spray.json');
     private bankMichelsonCode = require('../assets/contract-code/bank.json');
-    private adminPublicKey = faucet.pkh; // aka our admin-address
+    private adminPublicKey = admin.pkh; // aka our admin-address
     private voterMoneyPoolMetaData = require('../assets/contract-metadata/voter-money-pool-metadata.json');
     private fa2ContractMetaData = require('../assets/contract-metadata/fa2-contract-metadata.json');
     private auctionHouseMetaData = require('../assets/contract-metadata/auction_house-metadata.json');
@@ -72,6 +72,11 @@ export class Originator {
             });
         let contract = await origination.contract(2);
         return contract;
+    }
+
+    async originateSprayContract() {
+        const sprayTokenContract = await this.originate(this.sprayMichelsonCode, this.getSprayStorage(this.theVoteContractAddress))
+        console.log(sprayTokenContract.address)
     }
     
     async originateAllContracts() {

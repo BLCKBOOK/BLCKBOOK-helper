@@ -1,4 +1,4 @@
-import {faucet, user1, user2} from './faucet';
+import {admin, user1, user2} from './faucet';
 import {pinataKeys} from './pinata-keys';
 import {importKey, InMemorySigner} from '@taquito/signer';
 import {char2Bytes, Tzip16Module} from '@taquito/tzip16';
@@ -23,11 +23,12 @@ import {BankContract} from './contracts/bank_contract';
 import {AuctionHouseContract} from './contracts/auction_house_contract';
 import {FA2TokenContract} from './contracts/fa2_token_contract';
 import {VoterMoneyPoolContract} from './contracts/voter_money_pool_contract';
+import {SprayContract} from './contracts/spray_contract';
 
 
 
 // now do the setup for Pinata
-const pinata = pinataSDK(pinataKeys.key, pinataKeys.secret);
+/*const pinata = pinataSDK(pinataKeys.key, pinataKeys.secret);
 
 pinata.testAuthentication().then((result) => {
     //handle successful authentication here
@@ -35,14 +36,37 @@ pinata.testAuthentication().then((result) => {
 }).catch((err) => {
     //handle error here
     console.log(err);
-});
+});*/
 
 
 const ipfsPrefix = 'ipfs://';
+const sprayMetadata = 'QmQF9wr2ccULRkk9vqhZ3XdiEjYgz2MpcvkSA1fF2oEMgK';
 
 // This will then probably be needed for the activation of multiple accounts.
 // Somehow I need a user-management
 async function activateAccount() {
+}
+
+export interface User {
+    email: string,
+    password: string,
+    mnemonic: string[],
+    activation_code: string,
+    pkh: string,
+}
+
+async function setUser(tezos: TezosToolkit, currentUser: User) {
+    tezos.setSignerProvider(InMemorySigner.fromFundraiser(currentUser.email, currentUser.password, currentUser.mnemonic.join(' ')));
+
+    tezos.addExtension(new Tzip16Module());
+
+    importKey(
+        tezos,
+        currentUser.email,
+        currentUser.password,
+        currentUser.mnemonic.join(' '),
+        currentUser.activation_code
+    ).catch((e: any) => console.error(e));
 }
 
 async function main() {
@@ -52,17 +76,7 @@ async function main() {
 
     const tezos = new TezosToolkit(rpc);
 
-    tezos.setSignerProvider(InMemorySigner.fromFundraiser(faucet.email, faucet.password, faucet.mnemonic.join(' ')));
-
-    tezos.addExtension(new Tzip16Module());
-
-    importKey(
-        tezos,
-        faucet.email,
-        faucet.password,
-        faucet.mnemonic.join(' '),
-        faucet.activation_code
-    ).catch((e: any) => console.error(e));
+    await setUser(tezos, user1 as User)
 
 
     const vote = new TheVoteContract(tezos, theVoteContractAddress);
@@ -82,9 +96,31 @@ async function main() {
 
 /*    await bank.setNewPeriod();*/
 
-    await bank.canWithdraw(faucet.pkh);
+    const spray = new SprayContract(tezos, sprayContractAddress);
+    await spray.ready;
+    /*await spray.getMintParameter()*/
+
+    /*await vote.calculateAndVote(1, 2, 0);
+    await vote.calculateAndVote(1, 2, 0);*/
+    await vote.calculateAndVote(1, 3, 1);
+    await vote.calculateAndVote(1, 4, 2);
+
+
+    /*await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', user2.pkh);
+    await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', user1.pkh);
+    await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', admin.pkh);*/
+
+    // await vote.calculateAndVote(3, 1, 1);
+
+
+    /*await bank.canWithdraw(faucet.pkh);
     await bank.canWithdraw(user1.pkh);
-    await bank.canWithdraw(user2.pkh);
+    await bank.canWithdraw(user2.pkh);*/
+
+
+/*    await vote.mintArtworks(0);
+
+    await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', user2.pkh);*/
 
    /* the_vote.set_spray_contract(spray.address).run(sender=admin)
     the_vote.set_spray_bank_address(bank.address).run(sender=admin)
