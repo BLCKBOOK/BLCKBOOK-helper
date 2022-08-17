@@ -2,6 +2,9 @@ import {MichelsonMap, TezosToolkit, TransactionOperation, TransactionWalletOpera
 import {Contract} from './contract';
 import {char2Bytes} from '@taquito/tzip16';
 import assert from 'assert';
+import fetch from 'node-fetch';
+import {bankContractAddress, theVoteContractAddress} from '../constants';
+import {Vote} from './the_vote_contract';
 
 export class BankContract extends Contract {
 
@@ -83,6 +86,19 @@ export class BankContract extends Contract {
         } catch (error) {
             console.log(`Error: ${JSON.stringify(error, null, 2)}`);
         }
+    }
+
+    async userIsRegistered(userkey: string): Promise<any> {
+        const withdrawlsBigMap = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${bankContractAddress}/bigmaps/withdrawls`);
+        const withdrawlsBigMapAddress = (await withdrawlsBigMap.json()).ptr;
+
+
+        const url = `https://api.ghostnet.tzkt.io/v1/bigmaps/${withdrawlsBigMapAddress}/keys/${userkey}`;
+        console.log(url);
+        const response = await fetch(url);
+        console.log(response);
+        const data = await response.json();
+        console.log(data);
     }
 }
 

@@ -44,6 +44,39 @@ export class TheVoteContract extends Contract {
         }
     }
 
+    async setAdminOfPoolContract(new_address: string) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined
+                = await this.contract?.methods.set_admin_of_pool_contract(new_address).send();
+            const hash: any | undefined = await call?.confirmation(2);
+            console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+
+    async setAdminOfTokenContract(new_address: string) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined
+                = await this.contract?.methods.set_admin_of_token_contract(new_address).send();
+            const hash: any | undefined = await call?.confirmation(2);
+            console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+
+    async setAdminOfAuctionContract(new_address: string) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined
+                = await this.contract?.methods.set_admin_of_auction_contract(new_address).send();
+            const hash: any | undefined = await call?.confirmation(2);
+            console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+
     async setSprayAddress(new_address: string) {
         try {
             const call: TransactionWalletOperation | TransactionOperation | undefined

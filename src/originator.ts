@@ -24,10 +24,6 @@ export class Originator {
     private theVoteMetaData = require('../assets/contract-metadata/the_vote_metadata.json');
     private sprayMetaData = require('../assets/contract-metadata/spray_metadata.json');
 
-    private tokenMetadataIPFSHASH = 'QmSRcEPjcSYe2gfzxy4XFcALqGW5Qs43wDxvGM5WJ7YdSL';
-    private voterMoneyPoolMetadataIPFSHASH = 'QmfXoxCxWx1y5ZsBgjv1o44RCLWr7kY2UEPmGY53BZSSt5';
-    private auctionHouseMetadataIPFSHASH = 'QmcFwyQrbC4T9PssGbEgpSuH4RM486jbb7aj4xUD6RqSNU';
-
     private initialFA2Storage = `(Pair "${this.adminPublicKey}" (Pair 0 (Pair {} (Pair {} (Pair {} (Pair False {}))))))`;
     private initialVoterMoneyPoolStorage = `(Pair (Pair "${this.adminPublicKey}" (Right Unit)) (Pair {} (Pair {} {})))`;
 

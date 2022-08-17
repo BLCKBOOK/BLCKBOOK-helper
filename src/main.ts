@@ -1,4 +1,4 @@
-import {admin, user1, user2} from './faucet';
+import {admin, user1, user2, user3, user4, userNotRegistered} from './faucet';
 import {pinataKeys} from './pinata-keys';
 import {importKey, InMemorySigner} from '@taquito/signer';
 import {char2Bytes, Tzip16Module} from '@taquito/tzip16';
@@ -14,10 +14,14 @@ import {
 import {Originator} from './originator';
 import {TheVoteContract} from './contracts/the_vote_contract';
 import {
-    auctionHouseContractAddress,
+    auctionHouseContractAddress, auctionHouseMetadataIPFSHASH,
     bankContractAddress,
     sprayContractAddress,
-    theVoteContractAddress, tokenContractAddress, voterMoneyPoolContractAddress
+    theVoteContractAddress,
+    tokenContractAddress,
+    tokenMetadataIPFSHASH,
+    voterMoneyPoolContractAddress,
+    voterMoneyPoolMetadataIPFSHASH
 } from './constants';
 import {BankContract} from './contracts/bank_contract';
 import {AuctionHouseContract} from './contracts/auction_house_contract';
@@ -76,8 +80,7 @@ async function main() {
 
     const tezos = new TezosToolkit(rpc);
 
-    await setUser(tezos, user1 as User)
-
+    await setUser(tezos, admin as User)
 
     const vote = new TheVoteContract(tezos, theVoteContractAddress);
     await vote.ready;
@@ -100,10 +103,23 @@ async function main() {
     await spray.ready;
     /*await spray.getMintParameter()*/
 
+    const originator = new Originator(tezos);
+
+    /*await vote.setAdminOfTokenContract(admin.pkh);*/
+    await originator.setContractMetaDataWithHash(tokenContractAddress, tokenMetadataIPFSHASH);
+    await fa2.setAdministrator(theVoteContractAddress);
+
+    await vote.setAdminOfPoolContract(admin.pkh);
+    await originator.setContractMetaDataWithHash(voterMoneyPoolContractAddress, voterMoneyPoolMetadataIPFSHASH);
+    await voterMoneyPool.setAdministrator(theVoteContractAddress);
+
+    await vote.setAdminOfAuctionContract(admin.pkh);
+    await originator.setContractMetaDataWithHash(auctionHouseContractAddress, auctionHouseMetadataIPFSHASH);
+    await auctionHouse.setAdministrator(theVoteContractAddress);
+
+
     /*await vote.calculateAndVote(1, 2, 0);
     await vote.calculateAndVote(1, 2, 0);*/
-    await vote.calculateAndVote(1, 3, 1);
-    await vote.calculateAndVote(1, 4, 2);
 
 
     /*await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', user2.pkh);
@@ -135,19 +151,6 @@ async function main() {
 }
 
 main().then(() => console.log('all successful'));
-
-/*
-function activateFaucetKey() {
-    const {pkh, activation_code} = faucet;
-
-    try {
-        const operation = await tezos.tz.activate(pkh, activation_code);
-        await operation.confirmation(2);
-    } catch (e) {
-        console.log(e);
-    }
-}
-*/
 
 /*
     TODO:
