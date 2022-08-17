@@ -11,3 +11,5 @@ export const sprayMetadataIPFSHASH = 'QmSngGsY37p91y6Z3oHZmAtK3VCqrz3KJWVSmkyEjg
 export const voterMoneyPoolMetadataIPFSHASH = 'Qme5PQCgnXWA332yuLSyDdknM4wwBjtaQKxMLnimWY6yA8';
 export const auctionHouseMetadataIPFSHASH = 'QmXqb1KFmP3TbgD2JvartMiY5EmEK1RW61ybTD673dPzA6';
 export const voteMetadataIPFSHASH = 'Qmbzz5JKi8Zz3NNuk2yh4V7Epkc1Ggrea9nYArqaqwd5h4';
+
+export const sprayTOKENMetadata = 'QmQF9wr2ccULRkk9vqhZ3XdiEjYgz2MpcvkSA1fF2oEMgK';

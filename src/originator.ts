@@ -51,7 +51,9 @@ export class Originator {
         contract.methodsObject.set_metadata({
             k: '',
             v: char2Bytes(ipfsPrefix + ipfsHash)
-        }).send().then((op) => {
+        }).send({
+            fee: 800
+        }).then((op) => {
             console.log(`Waiting for ${op.hash} to be confirmed...`);
             return op.confirmation(2).then(() => op.hash);
         })

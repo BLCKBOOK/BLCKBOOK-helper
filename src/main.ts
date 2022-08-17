@@ -16,7 +16,7 @@ import {TheVoteContract} from './contracts/the_vote_contract';
 import {
     auctionHouseContractAddress, auctionHouseMetadataIPFSHASH,
     bankContractAddress,
-    sprayContractAddress,
+    sprayContractAddress, sprayMetadataIPFSHASH,
     theVoteContractAddress,
     tokenContractAddress,
     tokenMetadataIPFSHASH,
@@ -44,7 +44,7 @@ pinata.testAuthentication().then((result) => {
 
 
 const ipfsPrefix = 'ipfs://';
-const sprayMetadata = 'QmQF9wr2ccULRkk9vqhZ3XdiEjYgz2MpcvkSA1fF2oEMgK';
+
 
 // This will then probably be needed for the activation of multiple accounts.
 // Somehow I need a user-management
@@ -105,18 +105,19 @@ async function main() {
 
     const originator = new Originator(tezos);
 
-    /*await vote.setAdminOfTokenContract(admin.pkh);*/
-    await originator.setContractMetaDataWithHash(tokenContractAddress, tokenMetadataIPFSHASH);
-    await fa2.setAdministrator(theVoteContractAddress);
+/*    await vote.setAdminOfTokenContract(admin.pkh);
+    await originator.setContractMetaDataWithHash(tokenContractAddress, tokenMetadataIPFSHASH);*/
+/*    await fa2.setAdministrator(theVoteContractAddress);*/
 
-    await vote.setAdminOfPoolContract(admin.pkh);
+/*    await vote.setAdminOfPoolContract(admin.pkh);
     await originator.setContractMetaDataWithHash(voterMoneyPoolContractAddress, voterMoneyPoolMetadataIPFSHASH);
-    await voterMoneyPool.setAdministrator(theVoteContractAddress);
+    await voterMoneyPool.setAdministrator(theVoteContractAddress);*/
 
-    await vote.setAdminOfAuctionContract(admin.pkh);
-    await originator.setContractMetaDataWithHash(auctionHouseContractAddress, auctionHouseMetadataIPFSHASH);
-    await auctionHouse.setAdministrator(theVoteContractAddress);
+/*    await vote.setAdminOfAuctionContract(admin.pkh);
+    await originator.setContractMetaDataWithHash(auctionHouseContractAddress, auctionHouseMetadataIPFSHASH);*/
+/*    await auctionHouse.setAdministrator(theVoteContractAddress);*/
 
+    await originator.setContractMetaDataWithHash(sprayContractAddress, sprayMetadataIPFSHASH); // does not have set_metadata endpoint... why?
 
     /*await vote.calculateAndVote(1, 2, 0);
     await vote.calculateAndVote(1, 2, 0);*/
