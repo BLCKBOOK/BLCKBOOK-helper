@@ -249,5 +249,16 @@ export class TheVoteContract extends Contract {
             return -1
         }
     }
+
+    async setNextDeadlineMinutes(amount: number) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined
+                = await this.contract?.methods.set_next_deadline_minutes(amount).send();
+            const hash: any | undefined = await call?.confirmation(2);
+            console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
 }
 
