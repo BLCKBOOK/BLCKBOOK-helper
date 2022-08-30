@@ -808,10 +808,7 @@
                           { "prim": "SENDER" },
                           { "prim": "COMPARE" },
                           { "prim": "EQ" },
-                          {
-                            "prim": "IF",
-                            "args": [ [], [ { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "VOTER_MONEY_POOL_NOT_ADMIN" } ] }, { "prim": "FAILWITH" } ] ]
-                          },
+                          { "prim": "IF", "args": [ [], [ { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "AUC_NOT_ADMIN" } ] }, { "prim": "FAILWITH" } ] ] },
                           { "prim": "SWAP" },
                           { "prim": "DUP" },
                           { "prim": "GET", "args": [ { "int": "18" } ] },
