@@ -1,12 +1,62 @@
 {
+  "name": "BLCKBOOK $PRAY",
   "version": "1.0.0",
-  "description": "This is an adapted  minimal implementation of FA2 (TZIP-012) using SmartPy. It is used for the $PRAY-Token",
-  "interfaces": [ "TZIP-012", "TZIP-016" ],
-  "authors": [ "SmartPy <https://smartpy.io/#contact>" ],
-  "homepage": "https://smartpy.io/ide?template=fa2_fungible_minimal.py",
-  "source": { "tools": [ "SmartPy" ], "location": "https://gitlab.com/SmartPy/smartpy/-/raw/master/python/templates/fa2_fungible_minimal.py" },
-  "permissions": { "operator": "owner-or-operator-transfer", "receiver": "owner-no-hook", "sender": "owner-no-hook" },
   "views": [
+    {
+      "name": "get_balance",
+      "pure": true,
+      "description": "(Onchain view) Return the balance of an address for the specified `token_id`.",
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "parameter": { "prim": "pair", "args": [ { "prim": "address", "annots": [ "%owner" ] }, { "prim": "nat", "annots": [ "%token_id" ] } ] },
+            "returnType": { "prim": "nat" },
+            "code": [
+              { "prim": "UNPAIR" },
+              { "prim": "SWAP" },
+              { "prim": "DUP" },
+              { "prim": "DUG", "args": [ { "int": "2" } ] },
+              { "prim": "CAR" },
+              { "prim": "GET", "args": [ { "int": "4" } ] },
+              { "prim": "SWAP" },
+              { "prim": "DUP" },
+              { "prim": "DUG", "args": [ { "int": "2" } ] },
+              { "prim": "CDR" },
+              { "prim": "COMPARE" },
+              { "prim": "LT" },
+              { "prim": "IF", "args": [ [], [ { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "FA2_TOKEN_UNDEFINED" } ] }, { "prim": "FAILWITH" } ] ] },
+              { "prim": "SWAP" },
+              { "prim": "CAR" },
+              { "prim": "CAR" },
+              { "prim": "CDR" },
+              { "prim": "SWAP" },
+              { "prim": "GET" },
+              { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "nat" }, { "int": "0" } ] } ], [] ] }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "does_token_exist",
+      "pure": true,
+      "description": "Ask whether a token ID is exists.",
+      "implementations": [
+        {
+          "michelsonStorageView": {
+            "parameter": { "prim": "nat" },
+            "returnType": { "prim": "bool" },
+            "code": [ { "prim": "UNPAIR" }, { "prim": "SWAP" }, { "prim": "GET", "args": [ { "int": "6" } ] }, { "prim": "SWAP" }, { "prim": "MEM" } ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "count_tokens",
+      "pure": true,
+      "description": "Get how many tokens are in this FA2 contract.",
+      "implementations": [ { "michelsonStorageView": { "returnType": { "prim": "nat" }, "code": [ { "prim": "CAR" }, { "prim": "GET", "args": [ { "int": "4" } ] } ] } } ]
+    },
     {
       "name": "all_tokens",
       "pure": true,
@@ -56,41 +106,6 @@
       ]
     },
     {
-      "name": "get_balance",
-      "pure": true,
-      "description": "(Onchain view) Return the balance of an address for the specified `token_id`.",
-      "implementations": [
-        {
-          "michelsonStorageView": {
-            "parameter": { "prim": "pair", "args": [ { "prim": "address", "annots": [ "%owner" ] }, { "prim": "nat", "annots": [ "%token_id" ] } ] },
-            "returnType": { "prim": "nat" },
-            "code": [
-              { "prim": "UNPAIR" },
-              { "prim": "SWAP" },
-              { "prim": "DUP" },
-              { "prim": "DUG", "args": [ { "int": "2" } ] },
-              { "prim": "CAR" },
-              { "prim": "GET", "args": [ { "int": "4" } ] },
-              { "prim": "SWAP" },
-              { "prim": "DUP" },
-              { "prim": "DUG", "args": [ { "int": "2" } ] },
-              { "prim": "CDR" },
-              { "prim": "COMPARE" },
-              { "prim": "LT" },
-              { "prim": "IF", "args": [ [], [ { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "FA2_TOKEN_UNDEFINED" } ] }, { "prim": "FAILWITH" } ] ] },
-              { "prim": "SWAP" },
-              { "prim": "CAR" },
-              { "prim": "CAR" },
-              { "prim": "CDR" },
-              { "prim": "SWAP" },
-              { "prim": "GET" },
-              { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "nat" }, { "int": "0" } ] } ], [] ] }
-            ]
-          }
-        }
-      ]
-    },
-    {
       "name": "is_operator",
       "pure": true,
       "description": "(Onchain view) Return whether `operator` is allowed to transfer `token_id` tokens\n        owned by `owner`.",
@@ -109,39 +124,12 @@
           }
         }
       ]
-    },
-    {
-      "name": "total_supply",
-      "pure": true,
-      "description": "(Onchain view) Return the total number of tokens for the given `token_id` if known or\n        fail if not.",
-      "implementations": [
-        {
-          "michelsonStorageView": {
-            "parameter": { "prim": "nat" },
-            "returnType": { "prim": "nat" },
-            "code": [
-              { "prim": "UNPAIR" },
-              { "prim": "SWAP" },
-              { "prim": "DUP" },
-              { "prim": "DUG", "args": [ { "int": "2" } ] },
-              { "prim": "CAR" },
-              { "prim": "GET", "args": [ { "int": "4" } ] },
-              { "prim": "SWAP" },
-              { "prim": "DUP" },
-              { "prim": "DUG", "args": [ { "int": "2" } ] },
-              { "prim": "COMPARE" },
-              { "prim": "LT" },
-              { "prim": "IF", "args": [ [], [ { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "FA2_TOKEN_UNDEFINED" } ] }, { "prim": "FAILWITH" } ] ] },
-              { "prim": "SWAP" },
-              { "prim": "GET", "args": [ { "int": "3" } ] },
-              { "prim": "CDR" },
-              { "prim": "SWAP" },
-              { "prim": "GET" },
-              { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "nat" }, { "int": "0" } ] } ], [] ] }
-            ]
-          }
-        }
-      ]
     }
-  ]
+  ],
+  "description": "This is an adapted  minimal implementation of FA2 (TZIP-012) using SmartPy. It is used for the $PRAY-Token",
+  "interfaces": [ "TZIP-012", "TZIP-016" ],
+  "authors": [ "Niels Hanselmann", "SmartPy <https://smartpy.io/#contact>" ],
+  "homepage": "https://blckbook.vote",
+  "source": { "tools": [ "SmartPy" ], "location": "https://github.com/BLCKBOOK/BLCKBOOK-contract" },
+  "permissions": { "operator": "owner-or-operator-transfer", "receiver": "owner-no-hook", "sender": "owner-no-hook" }
 }

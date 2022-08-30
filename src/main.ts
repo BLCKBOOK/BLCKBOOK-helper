@@ -12,14 +12,14 @@ import {
     TransactionWalletOperation
 } from '@taquito/taquito';
 import {Originator} from './originator';
-import {TheVoteContract} from './contracts/the_vote_contract';
+import {ArtworkParams, TheVoteContract} from './contracts/the_vote_contract';
 import {
     auctionHouseContractAddress, auctionHouseMetadataIPFSHASH,
     bankContractAddress,
-    sprayContractAddress, sprayMetadataIPFSHASH,
+    sprayContractAddress, sprayMetadataIPFSHASH, sprayTOKENMetadata, theOldVoteContractAddress,
     theVoteContractAddress,
     tokenContractAddress,
-    tokenMetadataIPFSHASH,
+    tokenMetadataIPFSHASH, voteMetadataIPFSHASH,
     voterMoneyPoolContractAddress,
     voterMoneyPoolMetadataIPFSHASH
 } from './constants';
@@ -28,6 +28,7 @@ import {AuctionHouseContract} from './contracts/auction_house_contract';
 import {FA2TokenContract} from './contracts/fa2_token_contract';
 import {VoterMoneyPoolContract} from './contracts/voter_money_pool_contract';
 import {SprayContract} from './contracts/spray_contract';
+import fetch from 'node-fetch';
 
 
 
@@ -73,6 +74,10 @@ async function setUser(tezos: TezosToolkit, currentUser: User) {
     ).catch((e: any) => console.error(e));
 }
 
+async function artworkTestAdmission(tezos: TezosToolkit) {
+
+}
+
 async function main() {
     const anotherNetwork = 'https://ghostnet.smartpy.io';
     const rpc = 'https://rpc.ghostnet.teztnets.xyz';
@@ -97,33 +102,143 @@ async function main() {
     const voterMoneyPool = new VoterMoneyPoolContract(tezos, voterMoneyPoolContractAddress);
     await voterMoneyPool.ready;
 
-/*    await bank.setNewPeriod();*/
-
     const spray = new SprayContract(tezos, sprayContractAddress);
     await spray.ready;
-    /*await spray.getMintParameter()*/
 
     const originator = new Originator(tezos);
 
-/*    await vote.setAdminOfTokenContract(admin.pkh);
-    await originator.setContractMetaDataWithHash(tokenContractAddress, tokenMetadataIPFSHASH);*/
-/*    await fa2.setAdministrator(theVoteContractAddress);*/
+    /*    await vote.setAdminOfTokenContract(admin.pkh);
+        await originator.setContractMetaDataWithHash(tokenContractAddress, tokenMetadataIPFSHASH);*/
+    /*    await fa2.setAdministrator(theVoteContractAddress);*/
 
-/*    await vote.setAdminOfPoolContract(admin.pkh);
-    await originator.setContractMetaDataWithHash(voterMoneyPoolContractAddress, voterMoneyPoolMetadataIPFSHASH);
-    await voterMoneyPool.setAdministrator(theVoteContractAddress);*/
+    /*    await vote.setAdminOfPoolContract(admin.pkh);
+        await originator.setContractMetaDataWithHash(voterMoneyPoolContractAddress, voterMoneyPoolMetadataIPFSHASH);
+        await voterMoneyPool.setAdministrator(theVoteContractAddress);*/
 
-/*    await vote.setAdminOfAuctionContract(admin.pkh);
-    await originator.setContractMetaDataWithHash(auctionHouseContractAddress, auctionHouseMetadataIPFSHASH);*/
-/*    await auctionHouse.setAdministrator(theVoteContractAddress);*/
+    /*    await vote.setAdminOfAuctionContract(admin.pkh);
+        await originator.setContractMetaDataWithHash(auctionHouseContractAddress, auctionHouseMetadataIPFSHASH);*/
+    /*    await auctionHouse.setAdministrator(theVoteContractAddress);*/
 
-    await originator.setContractMetaDataWithHash(sprayContractAddress, sprayMetadataIPFSHASH); // does not have set_metadata endpoint... why?
+    // await vote.calculateAndVote(1, 160, 42)
+
+    /*await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', 'tz1LfhkLnSuixoDf9aYc3a3MyC5srGKBGSPu');*/
+
+    /*    await vote.mintArtworks(10);*/
+    /*await spray.mint(user2.pkh, 10000000, 'existing', 0);*/
+
+/*    await spray.mint(user1.pkh, 10000000, 'existing', 0);
+    await spray.mint(user2.pkh, 10000000, 'existing', 0);*/
+
+/*    let contractParams: ArtworkParams[] = [];
+    for (let i = 0; i < 150; i++) {
+        contractParams.push({ipfsLink: 'QmXNVrXBHhRUA9B8HkySEiNpuFvhaxFDqFeDGxdyFvajHP', uploader: user1.pkh})
+    }
+    for (let i = 0; i < 4; i++) {
+        await vote.batchAdmission(contractParams);
+    }*/
+
+    const response2 = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${theVoteContractAddress}/storage`);
+    const storageData = await response2.json();
+
+    const allArtworks = parseInt(storageData.all_artworks);
+    const admissions_this_period = parseInt(storageData.admissions_this_period);
+
+    await setUser(tezos, user1);
+    const batchSize = 299
+    for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
+        await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
+    }
+    await setUser(tezos, user2);
+    for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
+        await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
+    }
+    await setUser(tezos, user3);
+    for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
+        await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
+    }
+    await setUser(tezos, user4);
+    for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
+        await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
+    }
+
+/*    await spray.mint(user4.pkh, 10000000, 'existing', 0);
+
+    await setUser(tezos, user4);
+
+    const response2 = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${theVoteContractAddress}/storage`);
+    const storageData = await response2.json();
+
+    const allArtworks = parseInt(storageData.all_artworks);
+    const admissions_this_period = parseInt(storageData.admissions_this_period);
+
+    const batchSize = 300
+    for (let i = 0; i < 10; i++) {
+        await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
+    }*/
+
+/*    await vote.setVotesTransmissionLimitDuringMinting(100);
+
+
+    await vote.mintArtworksUntilReady();*/
+
+/*    await vote.mintArtworks(10);
+    await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', user2.pkh);
+    await vote.admission('QmanQwBarZr18BTLqgv71uCchBdio3zNWgKeJLFg8PRjzu', admin.pkh);
+    await vote.admission('QmXNVrXBHhRUA9B8HkySEiNpuFvhaxFDqFeDGxdyFvajHP', user3.pkh);
+    await vote.admission('QmQyFjRtMDawoWNPvVASZ4FLA5JiFQPmytLGjxBmK9tyfe', user4.pkh);
+    await vote.admission('QmPy3M2ZPeKpupm6GDeBNVRUazR2aKoxYWVGkwuawddSQW', userNotRegistered.pkh);
+    await vote.admission('QmWyDEgQB4PhGnL1VkTgrSGpgR7TkTxPXpDu5eZfmAyau7', userNotRegistered.pkh);
+    await vote.admission('QmVZMh9Ar3omACPFMm3WpRKK5MEr9FfsGdVJo9WUd5v7Zn', userNotRegistered.pkh);
+    await vote.admission('QmWT7zgaAGgM9z7vQ5DeUkdAQ7EfyEpHtHafuHnMkp7m1p', userNotRegistered.pkh);
+    await vote.admission('QmUNjCMGHQa4Atz8jeFFdLYn38rV7Do7kwwkSrKgzbEwcY', userNotRegistered.pkh);
+    await vote.admission('QmQgjUfWf4MYzPjRWbgv6rWFfAKkz49eZwN2mT4m1BYTuq', userNotRegistered.pkh);
+    await vote.admission('QmaozD3Ax8HRDPMwTbfT8TwGp2AN1Ta9zfL53MwpmxFq6E', userNotRegistered.pkh);
+    await vote.admission('QmcVjDxkRjc9MkwVQvRU3CMctuNqNMFAPgS6LTwoiEb3v2', userNotRegistered.pkh);
+    await vote.admission('QmTzcP6SMfPZhnXtbopfqGxcBSBUbovW5w2h7eKVAw4DE6', userNotRegistered.pkh);
+    await vote.admission('QmWp47j6wRyA6gQ6w5CmDZ7FWcPks89ViaEZqaki9Bx9vh', userNotRegistered.pkh);
+    await vote.admission('Qme5VWaq69t7jYN17cY3T6Li2rKwma32NgbvU5hgjYv48Y', userNotRegistered.pkh);
+    await vote.admission('QmfJEYbtBnVhCi8m9BPrXtUWvxmSkn8Ut8bkZiu1gcYqvm', userNotRegistered.pkh);
+    await vote.admission('QmQVKBzaKFPjBZsD4ghR2pMSx3Veaq6vgMfNUe8GomoZRU', userNotRegistered.pkh);
+    await vote.admission('QmX2rbGWak9rLmtHwi6xS4mhHSC12JJSQDn4cwkSLxyfQ2', userNotRegistered.pkh);
+    await vote.admission('QmbXpWfjiY8dkKhUt4szLfG3F6VuXuhixPUteXrxZY1RvE', userNotRegistered.pkh);
+    await vote.admission('QmXFgH9BicykhKef4vFvanY5W797jrD3d8vkaeijVezW4a', userNotRegistered.pkh);
+    await vote.admission('QmYf2P14rU6vDZzk4GrvcF2yFduhsypqojfRp9xLf2P2XT', userNotRegistered.pkh);
+    await vote.admission('Qmco6iHy9o9qzXeWqTLpjboxC5iVpt4g3mxT746V6Yhfon', userNotRegistered.pkh);
+    await vote.admission('QmfGzPmtmt4W4nAYQCvKV1ewfxfUXNs738pn8Bm9eWeDPu', userNotRegistered.pkh);
+    await vote.admission('QmVgFPRL7MEwerL7n1FigaaBVmjLwRUj3qUAdfVQjVLkQs', userNotRegistered.pkh);
+    await vote.admission('QmcknedrSmnxwZvEHAKUjWUVaC3ffSJWv7UZNTgCEeH2ZW', userNotRegistered.pkh);
+    await vote.admission('QmPuea4wYvPqK5pGgD1YqVSGzsb66Kwwu61jh62gJMTC9G', userNotRegistered.pkh);
+    await vote.admission('QmVeciMYv68qLZ8cs7jD6FUm9F25C6PWtx7aDFKnnfEwrW', userNotRegistered.pkh);
+    await vote.admission('QmXzwFof5kpm3Hu85frtZJcDkjfpYkRuu1BMq8iQmoABXN', userNotRegistered.pkh);
+    await vote.admission('QmXzwFof5kpm3Hu85frtZJcDkjfpYkRuu1BMq8iQmoABXN', userNotRegistered.pkh);
+    await vote.admission('QmWmBLwUB1dN9DCnEdxkBdwfNtXg1q5teEUfqVzZuE1Vvh', userNotRegistered.pkh);
+    await vote.admission('QmTrtFN6m6LvTqEzcEr4645pL5buNL6y5PQMEyF9xTkMnq', userNotRegistered.pkh);
+    await vote.admission('QmXdYagMLLp27j9uaPdJmUihmEWETXQN9NJ4dS5pP5QVDR', userNotRegistered.pkh);
+    await vote.admission('QmYJbRKgKVwi94AqvDjqoHLtrUoGi1fY1MBNRRVBFTjLZ1', userNotRegistered.pkh);
+    await vote.admission('QmWuadCuboN9YFXBM124BusnDz3CnJyruv47EWVC491hkG', userNotRegistered.pkh);
+    await vote.admission('QmVUxWhyDeHoAiL6qHbZmqDwwFxTvt1L3rmV4UeaFadGRV', userNotRegistered.pkh);
+    await vote.admission('QmdcLLc9H4Qhp4g8D3GSg8WgAHbLAsaS7yuYbpHYDiL3W9', userNotRegistered.pkh);
+    await vote.admission('QmX9TuJMNGkQMwpBx33TcUx159NZp4WgVJbtwQtbyoPZEj', userNotRegistered.pkh);
+    await vote.admission('QmWEkpFmg3AofJ8Tf6XoPxuR5Ks8AXiYbE1w5k3ghfmvLR', userNotRegistered.pkh);
+    await vote.admission('QmVnNrp5fsuxtr2vFRkYd99HrzFpcyZkPNjyNTZbmsRmmk', userNotRegistered.pkh);
+    await vote.admission('QmVpGgk73aUTgJfu4HrHDfeZ3amngUmy6xrngjBABG6wWs', userNotRegistered.pkh);
+    await vote.admission('QmdoyWG6iQnTVDHS3J65HJMx69ipKPGSutyeJkyTjvk5Ct', userNotRegistered.pkh);
+    await vote.admission('QmcsPwFkCPrCzMEw6LtLTdRMm5k2jjHEx88Ci3RmgMFJUp', userNotRegistered.pkh);
+    await vote.admission('QmUMpXpjYpmNXKS5KEYDFAS344RnB9jX4mAgQfnbT9Xnpw', userNotRegistered.pkh);
+    await vote.admission('QmSukjgRjvNhvivWQ4hCeBDqca8FJ9ZQptRERgHADNnveZ', userNotRegistered.pkh);*/
+
+
+
+
+
+
+    //await originator.setContractMetaDataWithHash(sprayContractAddress, sprayMetadataIPFSHASH); // TODO: does not have set_metadata endpoint... why?
 
     /*await vote.calculateAndVote(1, 2, 0);
     await vote.calculateAndVote(1, 2, 0);*/
+/*
 
-
-    /*await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', user2.pkh);
+    await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', user2.pkh);
     await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', user1.pkh);
     await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', admin.pkh);*/
 

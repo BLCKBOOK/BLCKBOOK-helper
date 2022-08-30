@@ -12,11 +12,11 @@ import fetch from 'node-fetch';
 import assert from 'assert';
 
 export interface Index {
-    index: string
+    index: string;
 }
 
 export interface End {
-    end: {}
+    end: {};
 }
 
 export interface Vote {
@@ -26,6 +26,10 @@ export interface Vote {
     vote_amount: string,
 }
 
+export interface ArtworkParams {
+    ipfsLink: string,
+    uploader: string,
+}
 
 export class TheVoteContract extends Contract {
 
@@ -101,11 +105,84 @@ export class TheVoteContract extends Contract {
     }
 
     async setVoterMoneyPoolAddress(new_address: string) {
-
         try {
             const call: TransactionWalletOperation | TransactionOperation | undefined
                 = await this.contract?.methods.set_voter_money_pool_address(new_address).send();
             const hash: any | undefined = await call?.confirmation(2);
+            console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+
+    async batchAdmission(artworks: ArtworkParams[]) {
+        const batch = this.tezos.wallet.batch();
+        for (let artwork of artworks) {
+            let storageMap = new MichelsonMap({
+                prim: 'map',
+                args: [{prim: 'string'}, {prim: 'bytes'}],
+            });
+            storageMap.set('decimals', char2Bytes('0'));
+            storageMap.set('', char2Bytes(artwork.ipfsLink));
+            if (this.contract) {
+                batch.withContractCall(this.contract.methodsObject.admission({
+                    uploader: artwork.uploader,
+                    metadata: storageMap,
+                }));
+            }
+        }
+        /*
+         * Here happens all the operation batching
+         */
+        const batchOp = await batch.send();
+        const confirmation = await batchOp.confirmation(1);
+        console.log(`Operation injected: https://ghost.tzstats.com/${confirmation.block.hash}`);
+    }
+
+    /*
+    this will only work if noone else has voted this period!
+     */
+    async voteBatch(startIndex = 0, amount = 100, artwork_id_offset: number) {
+        const batch = this.tezos.wallet.batch();
+        for (let i = startIndex; i < startIndex + amount; i++) {
+            const new_next = {index: i + 1};
+            const new_previous = i === 0 ? {end: UnitValue} : {index: i - 1};
+            const voteObject = {
+                amount,
+                artwork_id: i + artwork_id_offset,
+                index: i,
+                new_next,
+                new_previous
+            };
+
+            if (this.contract) {
+                batch.withContractCall(this.contract.methodsObject.vote(voteObject));
+            }
+        }
+        /*
+         * Here happens all the operation batching
+         */
+        const batchOp = await batch.send();
+        const confirmation = await batchOp.confirmation(1);
+        console.log(`Operation injected: https://ghost.tzstats.com/${confirmation.block.hash}`);
+    }
+
+    async ready_for_minting(confirmations = 2) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined
+                = await this.contract?.methods.ready_for_minting().send();
+            const hash: any | undefined = await call?.confirmation(confirmations);
+            console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+
+    async set_minting_ready_limit(new_limit: number, confirmations = 2) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined
+                = await this.contract?.methods.set_minting_ready_limit(new_limit).send();
+            const hash: any | undefined = await call?.confirmation(confirmations);
             console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
         } catch (error) {
             console.log(`Error: ${JSON.stringify(error, null, 2)}`);
@@ -126,11 +203,64 @@ export class TheVoteContract extends Contract {
                     metadata: storageMap,
                 }
             ).send();
-            const hash: any | undefined = await call?.confirmation(confirmations);
-            console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+            if (confirmations) {
+                const hash: any | undefined = await call?.confirmation(confirmations);
+                console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+            }
         } catch (error) {
             console.log(`Error: ${JSON.stringify(error, null, 2)}`);
         }
+    }
+
+    async setVotesTransmissionLimitDuringMinting(amount: number): Promise<boolean> {
+        do {
+            try {
+                const call: TransactionWalletOperation | TransactionOperation | undefined
+                    = await this.contract?.methods.set_votes_transmission_limit(amount).send();
+                const hash: any | undefined = await call?.confirmation(2);
+                console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+                return true;
+            } catch (error: any) {
+                if (error['message'] && (error.message as string).includes('THE_VOTE_CANT_SET_VOTES_TRANSMISSION_LIMIT_DURING_A_BATCH')) {
+                    console.log('need to continue to mint artworks until we can set the limit again');
+                    await this.mintArtworks(1);
+                }
+                else {
+                    console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+                    return false;
+                }
+            }
+        } while (true);
+    }
+
+    async mintArtworksUntilReady(): Promise<boolean> {
+        let amount = 128;
+        if (this.contract) {
+            do {
+                try {
+                    console.log(amount);
+                    const call: TransactionWalletOperation | TransactionOperation | undefined
+                        = await this.contract?.methods.mint_artworks(amount).send();
+                    const hash: any | undefined = await call?.confirmation(2);
+                    console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+                    console.log(amount);
+                    break;
+                } catch (error: any) {
+                    if (error['id'] && (error.id as string).includes('gas_exhausted.operation')) {
+                        console.log('we have a gas_exhaustion')
+                    } else if (error['message'] && (error.message as string).includes('THE_VOTE_CANT_SET_VOTES_TRANSMISSION_LIMIT_DURING_A_BATCH')) {
+
+                    }
+
+                    else {
+                        console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+                        return false;
+                    }
+                    amount = Math.floor(amount / 2);
+                }
+            } while (true);
+        }
+        return false;
     }
 
     async mintArtworks(amount: number) {
@@ -184,7 +314,7 @@ export class TheVoteContract extends Contract {
         let next = this.calculateIndex(startEntry.next);
         console.log(next);
         console.log(previous);
-        while(previous != -1) {
+        while (previous != -1) {
             let previousResponse = await fetch(`https://api.ghostnet.tzkt.io/v1/bigmaps/${votesBigMapAddress}/keys/${previous}`);
             const previousEntry = (await previousResponse.json()).value as Vote;
             if (parseInt(previousEntry.vote_amount) >= currentVoteAmount) {
@@ -215,7 +345,7 @@ export class TheVoteContract extends Contract {
             index,
             new_next,
             new_previous
-        }
+        };
 
         console.log(voteObject);
 
@@ -228,16 +358,6 @@ export class TheVoteContract extends Contract {
             console.log(`Error: ${JSON.stringify(error, null, 2)}`);
         }
 
-/*        const params = {
-            amount, artwork_id,
-        }
-            amount: 'nat',
-            artwork_id: 'nat',
-            index: 'nat',
-            new_next: { end: 'unit', index: 'nat' },
-        new_previous: { end: 'unit', index: 'nat' }*/
-
-
     }
 
     private calculateIndex(value: Index | End): number {
@@ -246,7 +366,7 @@ export class TheVoteContract extends Contract {
             // @ts-ignore
             return parseInt(value['index']);
         } else {
-            return -1
+            return -1;
         }
     }
 
@@ -254,6 +374,28 @@ export class TheVoteContract extends Contract {
         try {
             const call: TransactionWalletOperation | TransactionOperation | undefined
                 = await this.contract?.methods.set_next_deadline_minutes(amount).send();
+            const hash: any | undefined = await call?.confirmation(2);
+            console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+
+    async setMintingRatio(new_ratio: number) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined
+                = await this.contract?.methods.set_minting_ratio(new_ratio).send();
+            const hash: any | undefined = await call?.confirmation(2);
+            console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+
+    async set_votes_transmission_limit(new_limit: number) {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined
+                = await this.contract?.methods.set_votes_transmission_limit(new_limit).send();
             const hash: any | undefined = await call?.confirmation(2);
             console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
         } catch (error) {

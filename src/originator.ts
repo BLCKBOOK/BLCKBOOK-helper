@@ -1,15 +1,17 @@
 import {ContractAbstraction, ContractProvider, TezosToolkit} from '@taquito/taquito';
 import {char2Bytes} from '@taquito/tzip16';
 import {admin} from './faucet';
-import {ipfsPrefix} from './constants';
+import {
+    auctionHouseContractAddress,
+    bankContractAddress,
+    ipfsPrefix,
+    sprayContractAddress,
+    theVoteContractAddress,
+    tokenContractAddress,
+    voterMoneyPoolContractAddress
+} from './constants';
 
 export class Originator {
-    private tokenContractAddress = 'KT1D1hhh4aKTLt79iu4q1M8bfHsUR9cpUKds';
-    private voterMoneyPoolContractAddress = 'KT1StnQpS86BUw8gjLNU2aVw6qgeuP5szEe7';
-    private auctionHouseContractAddress = 'KT19ubT4oVE4L4KatHE1WJbPb481fXaumei1';
-    private theVoteContractAddress = 'KT1DcoAaqwJSXTNcxjUPhkFuW6BJmJL6TG3V';
-    private sprayContractAddress = 'KT1HEe2SdxKFF6v4tYinFMykKddBgyNZcGYU';
-    private bankContractAddress = 'KT1VddB9LRnD5reNo2bugLikcxxQ1cHHTFjG';
 
     private fa2ContractMichelsonCode = require('../assets/contract-code/token-contract.json');
     private voterMoneyPoolMichelsonCode = require('../assets/contract-code/voter_money_pool_contract.json');
@@ -35,11 +37,11 @@ export class Originator {
     }
 
     getTheVoteStorage(auctionHouseAddress: string, moneyPoolAddress: string, bankAddress: string, sprayAddress: string, tokenAddress: string): string {
-        return `(Pair (Pair (Pair (Pair "${this.adminPublicKey}" 0) (Pair 0 (Pair {} {}))) (Pair (Pair "${auctionHouseAddress}" "1970-01-08T00:00:00Z") (Pair 0 (Pair 0 {})))) (Pair (Pair (Pair 10 10080) (Pair False (Pair "${bankAddress}" "${sprayAddress}"))) (Pair (Pair "${tokenAddress}" (Pair {} "${moneyPoolAddress}")) (Pair {} (Pair 0 200)))))`;
+        return `(Pair (Pair (Pair (Pair "${this.adminPublicKey}" (Pair 0 0)) (Pair {} (Pair {} "${auctionHouseAddress}"))) (Pair (Pair "1970-01-08T00:00:00Z" (Pair 0 0)) (Pair {} (Pair 10 0)))) (Pair (Pair (Pair 0 (Pair 200 10080)) (Pair False (Pair "${bankAddress}" "${sprayAddress}"))) (Pair (Pair "${tokenAddress}" (Pair {} "${moneyPoolAddress}")) (Pair {} (Pair 0 200)))))`;
     }
 
     getSprayStorage(voteAddress: string): string {
-        return `(Pair (Pair (Pair "${this.adminPublicKey}" {}) (Pair {Elt "" 0x68747470732f2f6578616d706c652e636f6d} 0)) (Pair (Pair {} {}) (Pair "${voteAddress}" {})))`;
+        return `(Pair (Pair (Pair "${this.adminPublicKey}" {}) (Pair {} 0)) (Pair (Pair {} {}) (Pair "${voteAddress}" {})))`
     }
 
     getBankStorage(sprayAddress: string, voteAddress: string): string {
@@ -68,13 +70,17 @@ export class Originator {
                 code: code,
                 init: initialStorage,
             });
-        let contract = await origination.contract(2);
-        return contract;
+        return await origination.contract(2);
     }
 
     async originateSprayContract() {
-        const sprayTokenContract = await this.originate(this.sprayMichelsonCode, this.getSprayStorage(this.theVoteContractAddress))
+        const sprayTokenContract = await this.originate(this.sprayMichelsonCode, this.getSprayStorage(theVoteContractAddress))
         console.log(sprayTokenContract.address)
+    }
+
+    async originateTheVoteContract() {
+        const theVoteContract = await this.originate(this.theVoteMichelsonCode, this.getTheVoteStorage(auctionHouseContractAddress, voterMoneyPoolContractAddress, bankContractAddress, sprayContractAddress, tokenContractAddress))
+        console.log(theVoteContract.address);
     }
     
     async originateAllContracts() {
@@ -86,9 +92,9 @@ export class Originator {
         console.log(auctionHouseContract.address);
         const theVoteContract = await this.originate(this.theVoteMichelsonCode, this.getTheVoteStorage(auctionHouseContract.address, voterMoneyPoolContract.address, tokenContract.address, tokenContract.address, tokenContract.address))
         console.log(theVoteContract.address);*/
-        const sprayTokenContract = await this.originate(this.sprayMichelsonCode, this.getSprayStorage(this.theVoteContractAddress))
+        const sprayTokenContract = await this.originate(this.sprayMichelsonCode, this.getSprayStorage(theVoteContractAddress))
         console.log(sprayTokenContract.address)
-        const bankContract = await this.originate(this.bankMichelsonCode, this.getBankStorage(sprayTokenContract.address, this.theVoteContractAddress));
+        const bankContract = await this.originate(this.bankMichelsonCode, this.getBankStorage(sprayTokenContract.address, theVoteContractAddress));
         console.log(bankContract.address)
 
 /*        console.log(`token: ${tokenContract.address}`);
