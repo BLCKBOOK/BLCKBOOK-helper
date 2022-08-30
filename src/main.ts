@@ -74,8 +74,51 @@ async function setUser(tezos: TezosToolkit, currentUser: User) {
     ).catch((e: any) => console.error(e));
 }
 
-async function artworkTestAdmission(tezos: TezosToolkit) {
+/**
+ * test a giant amount of artwork-admissions
+ * @param tezos
+ * @param vote
+ */
+async function artworkTestAdmission(tezos: TezosToolkit, vote: TheVoteContract, spray: SprayContract, mintSprayForUsers = false) {
+    if (mintSprayForUsers) {
+        await spray.mint(user1.pkh, 10000000, 'existing', 0);
+        await spray.mint(user2.pkh, 10000000, 'existing', 0);
+        await spray.mint(user3.pkh, 10000000, 'existing', 0);
+        await spray.mint(user4.pkh, 10000000, 'existing', 0);
+    }
 
+
+    let contractParams: ArtworkParams[] = [];
+    for (let i = 0; i < 150; i++) {
+        contractParams.push({ipfsLink: 'QmXNVrXBHhRUA9B8HkySEiNpuFvhaxFDqFeDGxdyFvajHP', uploader: user1.pkh})
+    }
+    for (let i = 0; i < 4; i++) {
+        await vote.batchAdmission(contractParams);
+    }
+
+    const response2 = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${theVoteContractAddress}/storage`);
+    const storageData = await response2.json();
+
+    const allArtworks = parseInt(storageData.all_artworks);
+    const admissions_this_period = parseInt(storageData.admissions_this_period);
+
+    await setUser(tezos, user1);
+    const batchSize = 299
+    for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
+        await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
+    }
+    await setUser(tezos, user2);
+    for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
+        await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
+    }
+    await setUser(tezos, user3);
+    for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
+        await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
+    }
+    await setUser(tezos, user4);
+    for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
+        await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
+    }
 }
 
 async function main() {
@@ -107,6 +150,10 @@ async function main() {
 
     const originator = new Originator(tezos);
 
+
+    await vote.mintArtworksUntilReady();
+
+
     /*    await vote.setAdminOfTokenContract(admin.pkh);
         await originator.setContractMetaDataWithHash(tokenContractAddress, tokenMetadataIPFSHASH);*/
     /*    await fa2.setAdministrator(theVoteContractAddress);*/
@@ -128,42 +175,10 @@ async function main() {
 
 /*    await spray.mint(user1.pkh, 10000000, 'existing', 0);
     await spray.mint(user2.pkh, 10000000, 'existing', 0);*/
-
-/*    let contractParams: ArtworkParams[] = [];
-    for (let i = 0; i < 150; i++) {
-        contractParams.push({ipfsLink: 'QmXNVrXBHhRUA9B8HkySEiNpuFvhaxFDqFeDGxdyFvajHP', uploader: user1.pkh})
-    }
-    for (let i = 0; i < 4; i++) {
-        await vote.batchAdmission(contractParams);
-    }*/
-
-    const response2 = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${theVoteContractAddress}/storage`);
-    const storageData = await response2.json();
-
-    const allArtworks = parseInt(storageData.all_artworks);
-    const admissions_this_period = parseInt(storageData.admissions_this_period);
-
-    await setUser(tezos, user1);
-    const batchSize = 299
-    for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
-        await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
-    }
-    await setUser(tezos, user2);
-    for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
-        await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
-    }
-    await setUser(tezos, user3);
-    for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
-        await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
-    }
-    await setUser(tezos, user4);
-    for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
-        await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
-    }
-
 /*    await spray.mint(user4.pkh, 10000000, 'existing', 0);
 
     await setUser(tezos, user4);
+
 
     const response2 = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${theVoteContractAddress}/storage`);
     const storageData = await response2.json();

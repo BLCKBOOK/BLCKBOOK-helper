@@ -224,8 +224,7 @@ export class TheVoteContract extends Contract {
                 if (error['message'] && (error.message as string).includes('THE_VOTE_CANT_SET_VOTES_TRANSMISSION_LIMIT_DURING_A_BATCH')) {
                     console.log('need to continue to mint artworks until we can set the limit again');
                     await this.mintArtworks(1);
-                }
-                else {
+                } else {
                     console.log(`Error: ${JSON.stringify(error, null, 2)}`);
                     return false;
                 }
@@ -234,31 +233,118 @@ export class TheVoteContract extends Contract {
     }
 
     async mintArtworksUntilReady(): Promise<boolean> {
-        let amount = 128;
+        let mintAmount = 4096;
+        let readyForMintAmount = 512;
+        let votesTransmissionAmount = 4096;
+        let mintedAll = false;
+
         if (this.contract) {
+            // first try to get the ready_for_minting to work
             do {
-                try {
-                    console.log(amount);
-                    const call: TransactionWalletOperation | TransactionOperation | undefined
-                        = await this.contract?.methods.mint_artworks(amount).send();
-                    const hash: any | undefined = await call?.confirmation(2);
-                    console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
-                    console.log(amount);
+                const response = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${theVoteContractAddress}/storage`);
+                const storageData = await response.json();
+                if (storageData.ready_for_minting) {
+                    console.log('we are ready for minting');
                     break;
+                }
+                if (parseInt(storageData.minting_ready_batch_counter) === 0) { // only try to lower the amount if we are not in a batch already
+                    const current_limit = parseInt(storageData.minting_ready_limit);
+                    if (current_limit !== readyForMintAmount) {
+                        console.log('ready for minting not correct');
+                        try {
+                            const call: TransactionWalletOperation | TransactionOperation | undefined
+                                = await this.contract?.methods.set_minting_ready_limit(readyForMintAmount).send();
+                            const hash: any | undefined = await call?.confirmation(2);
+                            console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+                        } catch (error: any) {
+                            console.log('could not set the new minting_ready_limit');
+                            return false;
+                        }
+                    }
+                }
+
+                try {
+                    console.log(readyForMintAmount);
+                    const call: TransactionWalletOperation | TransactionOperation | undefined
+                        = await this.contract?.methods.ready_for_minting().send();
+                    const hash: any | undefined = await call?.confirmation(2);
+                    console.log(`Ready_for_minting operation successful: https://ghost.tzstats.com/${hash}`);
                 } catch (error: any) {
                     if (error['id'] && (error.id as string).includes('gas_exhausted.operation')) {
-                        console.log('we have a gas_exhaustion')
-                    } else if (error['message'] && (error.message as string).includes('THE_VOTE_CANT_SET_VOTES_TRANSMISSION_LIMIT_DURING_A_BATCH')) {
-
-                    }
-
-                    else {
+                        console.log('we have a gas_exhaustion in ready_for_minting');
+                    } else {
                         console.log(`Error: ${JSON.stringify(error, null, 2)}`);
                         return false;
                     }
-                    amount = Math.floor(amount / 2);
+                    readyForMintAmount = Math.floor(readyForMintAmount / 2);
+                    if (readyForMintAmount === 1) {
+                        console.log('ready for mint amount is 1 and should not have to be this low');
+                        return false;
+                    }
                 }
-            } while (true);
+            }
+
+            while (true);
+            do {
+                try {
+                    console.log(mintAmount);
+                    if (mintAmount === 1) {
+                        console.log('mint-amount is 1');
+                        const response = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${theVoteContractAddress}/storage`);
+                        const storageData = await response.json();
+
+                        const current_limit = parseInt(storageData.minting_ready_limit);
+                        if (current_limit !== votesTransmissionAmount) {
+                            console.log('votes Transmission Amount not correct');
+                            try {
+                                const call: TransactionWalletOperation | TransactionOperation | undefined
+                                    = await this.contract?.methods.set_votes_transmission_limit(votesTransmissionAmount).send();
+                                const hash: any | undefined = await call?.confirmation(2);
+                                console.log(`Did set the new votes-transmission-limit: https://ghost.tzstats.com/${hash}`);
+                            } catch (error: any) {
+                                if (error['message'] && (error.message as string).includes('THE_VOTE_CANT_SET_VOTES_TRANSMISSION_LIMIT_DURING_A_BATCH')) {
+                                    const success = await this.setVotesTransmissionLimitDuringMinting(votesTransmissionAmount);
+                                    if (!success) {
+                                        console.log('was not successful finishing the vote');
+                                        return false;
+                                    }
+                                    console.log('had to finish transmitting the vote');
+                                } else {
+                                    console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+                                    console.log('could not set the new votes_transmission_limit');
+                                    return false;
+                                }
+                            }
+                        }
+                        // if mint amount is ever 1 we need to lower the vote_transmission_limit
+                    }
+                    const call: TransactionWalletOperation | TransactionOperation | undefined
+                        = await this.contract?.methods.mint_artworks(mintAmount).send();
+                    const hash: any | undefined = await call?.confirmation(2);
+                    console.log(`Mint artworks succeeded: https://ghost.tzstats.com/${hash}`);
+                } catch (error: any) {
+                    if (error['id'] && (error.id as string).includes('gas_exhausted.operation')) {
+                        console.log('we have a gas_exhaustion');
+                        if (mintAmount === 1) {
+                            votesTransmissionAmount = Math.floor(votesTransmissionAmount / 2);
+                            if (votesTransmissionAmount === 1) {
+                                console.log('was not able to transmit a single vote... so we are f****');
+                                return false;
+                            }
+                            continue;
+                        }
+                    } else {
+                        console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+                        return false;
+                    }
+                    mintAmount = Math.floor(mintAmount / 2);
+                }
+                const response = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${theVoteContractAddress}/storage`);
+                const storageData = await response.json();
+
+                mintedAll = !(storageData.ready_for_minting);
+
+            } while (!mintedAll);
         }
         return false;
     }

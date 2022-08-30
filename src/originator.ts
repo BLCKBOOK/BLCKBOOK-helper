@@ -37,7 +37,7 @@ export class Originator {
     }
 
     getTheVoteStorage(auctionHouseAddress: string, moneyPoolAddress: string, bankAddress: string, sprayAddress: string, tokenAddress: string): string {
-        return `(Pair (Pair (Pair (Pair "${this.adminPublicKey}" (Pair 0 0)) (Pair {} (Pair {} "${auctionHouseAddress}"))) (Pair (Pair "1970-01-08T00:00:00Z" (Pair 0 0)) (Pair {} (Pair 10 0)))) (Pair (Pair (Pair 0 (Pair 200 10080)) (Pair False (Pair "${bankAddress}" "${sprayAddress}"))) (Pair (Pair "${tokenAddress}" (Pair {} "${moneyPoolAddress}")) (Pair {} (Pair 0 200)))))`;
+        return `(Pair (Pair (Pair (Pair "${this.adminPublicKey}" 0) (Pair 0 (Pair {} {}))) (Pair (Pair "${auctionHouseAddress}" (Pair "1970-01-08T00:00:00Z" 0)) (Pair 0 (Pair {} 10)))) (Pair (Pair (Pair 0 (Pair 200 10080)) (Pair False (Pair "${bankAddress}" "${sprayAddress}"))) (Pair (Pair "${tokenAddress}" (Pair {} "${moneyPoolAddress}")) (Pair {} (Pair 0 200)))))`
     }
 
     getSprayStorage(voteAddress: string): string {
