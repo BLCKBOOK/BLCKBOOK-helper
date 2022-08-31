@@ -7,9 +7,10 @@ import {
 } from '@taquito/taquito';
 import {Contract} from './contract';
 import {char2Bytes} from '@taquito/tzip16';
-import {theVoteContractAddress} from '../constants';
+import {theVoteContractAddress, tzktAddress} from '../constants';
 import fetch from 'node-fetch';
 import assert from 'assert';
+import {VoteContractHistoryEntry, VoteStorage} from '../types';
 
 export interface Index {
     index: string;
@@ -232,16 +233,22 @@ export class TheVoteContract extends Contract {
         } while (true);
     }
 
+    async deadlinePassed(): Promise<boolean> {
+        const response = await fetch(`${tzktAddress}contracts/${theVoteContractAddress}/storage`);
+        const storageData = await response.json();
+        return Date.parse(storageData.deadline) < Date.now();
+    }
+
     async mintArtworksUntilReady(): Promise<boolean> {
-        let mintAmount = 4096;
-        let readyForMintAmount = 512;
+        let mintAmount = 115;
+        let readyForMintAmount = 4096;
         let votesTransmissionAmount = 4096;
         let mintedAll = false;
 
         if (this.contract) {
             // first try to get the ready_for_minting to work
             do {
-                const response = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${theVoteContractAddress}/storage`);
+                const response = await fetch(`${tzktAddress}contracts/${theVoteContractAddress}/storage`);
                 const storageData = await response.json();
                 if (storageData.ready_for_minting) {
                     console.log('we are ready for minting');
@@ -290,7 +297,7 @@ export class TheVoteContract extends Contract {
                     console.log(mintAmount);
                     if (mintAmount === 1) {
                         console.log('mint-amount is 1');
-                        const response = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${theVoteContractAddress}/storage`);
+                        const response = await fetch(`${tzktAddress}contracts/${theVoteContractAddress}/storage`);
                         const storageData = await response.json();
 
                         const current_limit = parseInt(storageData.minting_ready_limit);
@@ -320,7 +327,7 @@ export class TheVoteContract extends Contract {
                     }
                     const call: TransactionWalletOperation | TransactionOperation | undefined
                         = await this.contract?.methods.mint_artworks(mintAmount).send();
-                    const hash: any | undefined = await call?.confirmation(2);
+                    const hash: any | undefined = await call?.confirmation(1);
                     console.log(`Mint artworks succeeded: https://ghost.tzstats.com/${hash}`);
                 } catch (error: any) {
                     if (error['id'] && (error.id as string).includes('gas_exhausted.operation')) {
@@ -337,9 +344,9 @@ export class TheVoteContract extends Contract {
                         console.log(`Error: ${JSON.stringify(error, null, 2)}`);
                         return false;
                     }
-                    mintAmount = Math.floor(mintAmount / 2);
+                    mintAmount = Math.floor(mintAmount / 5 * 4);
                 }
-                const response = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${theVoteContractAddress}/storage`);
+                const response = await fetch(`${tzktAddress}contracts/${theVoteContractAddress}/storage`);
                 const storageData = await response.json();
 
                 mintedAll = !(storageData.ready_for_minting);
@@ -376,15 +383,15 @@ export class TheVoteContract extends Contract {
      */
     async calculateAndVote(amount: number, artwork_id: number, index: number) {
 
-        const bigMapAddress = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${theVoteContractAddress}/bigmaps/votes`);
+        const bigMapAddress = await fetch(`${tzktAddress}contracts/${theVoteContractAddress}/bigmaps/votes`);
         const votesBigMapAddress = (await bigMapAddress.json()).ptr;
 
 
-        const response = await fetch(`https://api.ghostnet.tzkt.io/v1/bigmaps/${votesBigMapAddress}/keys/${index}`);
+        const response = await fetch(`${tzktAddress}bigmaps/${votesBigMapAddress}/keys/${index}`);
         const data = await response.json();
         const startEntry = data.value as Vote;
 
-        const response2 = await fetch(`https://api.ghostnet.tzkt.io/v1/contracts/${theVoteContractAddress}/storage`);
+        const response2 = await fetch(`${tzktAddress}contracts/${theVoteContractAddress}/storage`);
         const storageData = await response2.json();
 
         const highestVoteIndex = parseInt(storageData.highest_vote_index);
@@ -401,7 +408,7 @@ export class TheVoteContract extends Contract {
         console.log(next);
         console.log(previous);
         while (previous != -1) {
-            let previousResponse = await fetch(`https://api.ghostnet.tzkt.io/v1/bigmaps/${votesBigMapAddress}/keys/${previous}`);
+            let previousResponse = await fetch(`${tzktAddress}bigmaps/${votesBigMapAddress}/keys/${previous}`);
             const previousEntry = (await previousResponse.json()).value as Vote;
             if (parseInt(previousEntry.vote_amount) >= currentVoteAmount) {
                 next = this.calculateIndex(previousEntry.next);
@@ -487,6 +494,32 @@ export class TheVoteContract extends Contract {
         } catch (error) {
             console.log(`Error: ${JSON.stringify(error, null, 2)}`);
         }
+    }
+
+    /**
+     * this method goes back in the storage-history of theVote contract to find the last time ready_for_minting was called.
+     * When this happened the artworks_to_mint
+     */
+    async calculateArtworksToMintSet(): Promise<VoteStorage | undefined> {
+        let lastId: string | undefined = undefined;
+        while (true) {
+            let params =  (lastId ? new URLSearchParams({lastId: lastId}) : '').toString();
+            let searchString = `${tzktAddress}contracts/${theVoteContractAddress}/storage/history/?` + params;
+            let response = await fetch(searchString);
+            let entries = await response.json() as VoteContractHistoryEntry[];
+            let entry = entries.find(entry => entry.operation.parameter?.entrypoint === 'ready_for_minting');
+            if (entry) {
+                console.log(`we found the last ready_for_minting and have ${entry.value.artworks_to_mint.length} artworks that got minted`);
+                return entry.value;
+            }
+            lastId = entries.at(-1)?.id.toString();
+            console.log(lastId);
+            if (entries.length === 0) { // this will have gone back to the origination of the contract. So yeah...
+                console.log('found nothing for all entries')
+                break;
+            }
+        }
+        return undefined;
     }
 }
 

@@ -14,3 +14,6 @@ export const auctionHouseMetadataIPFSHASH = 'QmXqb1KFmP3TbgD2JvartMiY5EmEK1RW61y
 
 export const voteMetadataIPFSHASH = 'Qmbzz5JKi8Zz3NNuk2yh4V7Epkc1Ggrea9nYArqaqwd5h4';
 export const sprayTOKENMetadata = 'QmQF9wr2ccULRkk9vqhZ3XdiEjYgz2MpcvkSA1fF2oEMgK';
+
+export const tzktAddress = 'https://api.ghostnet.tzkt.io/v1/'
+export const maxConcurrency = 64;
