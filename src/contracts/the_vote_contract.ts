@@ -352,6 +352,8 @@ export class TheVoteContract extends Contract {
                 mintedAll = !(storageData.ready_for_minting);
 
             } while (!mintedAll);
+            console.log('we did it and minted all!');
+            return true;
         }
         return false;
     }
