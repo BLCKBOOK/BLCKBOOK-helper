@@ -1,18 +1,8 @@
-export interface TzktKey {
-    active: boolean,
-    firstLevel: number,
-    hash: string,
-    id: number,
-    key: string
-    lastLevel: number,
-    updates: number,
-}
-
-export interface TzktVotesRegisterBigMapKey extends TzktKey {
+export interface TzktVotesRegisterBigMapKey extends TzktBigMapKey {
     value: string[];
 }
 
-export interface TzktArtworkInfoBigMapKey extends TzktKey {
+export interface TzktArtworkInfoBigMapKey extends TzktBigMapKey {
     value: ArtworkInfoValue;
 }
 
@@ -28,6 +18,28 @@ export interface ArtworkInfoValue {
 export interface ArtworkInfo {
     "": string,
     decimals: number
+}
+
+export interface TzktAuctionKey extends TzktBigMapKey {
+    value: TzktAuction,
+}
+
+export interface TzktBigMapKey {
+    active: boolean,
+    firstLevel: number,
+    hash: string,
+    id: number,
+    key: string
+    lastLevel: number,
+    updates: number,
+}
+
+export interface TzktAuction {
+    bid_amount: string,
+    bidder: string,
+    end_timestamp: string,
+    uploader: string,
+    voter_amount: string,
 }
 
 export interface VoteContractHistoryEntry {

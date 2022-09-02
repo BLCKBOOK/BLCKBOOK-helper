@@ -72,7 +72,7 @@ async function main() {
     const rpc = 'https://rpc.ghostnet.teztnets.xyz';
     const yetAnotherRpc = 'https://ghostnet.ecadinfra.com'
 
-    const tezos = new TezosToolkit(anotherNetwork);
+    const tezos = new TezosToolkit(rpc);
 
     await setUser(tezos, admin as User)
 
@@ -96,8 +96,7 @@ async function main() {
 
     const originator = new Originator(tezos);
 
-    const success = await mintAndBuildNotifications(tezos, vote);
-    console.log(success);
+    await auctionHouse.endExpiredAuctions();
 
     /*    await vote.setAdminOfTokenContract(admin.pkh);
         await originator.setContractMetaDataWithHash(tokenContractAddress, tokenMetadataIPFSHASH);*/

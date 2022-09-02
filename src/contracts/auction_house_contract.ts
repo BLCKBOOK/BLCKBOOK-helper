@@ -1,6 +1,9 @@
 import {Contract} from './contract';
-import {TezosToolkit, TransactionOperation, TransactionWalletOperation} from '@taquito/taquito';
-import {tzip16} from '@taquito/tzip16';
+import {MichelsonMap, TezosToolkit, TransactionOperation, TransactionWalletOperation} from '@taquito/taquito';
+import {char2Bytes, tzip16} from '@taquito/tzip16';
+import fetch from 'node-fetch';
+import {auctionHouseContractAddress, bankContractAddress, maxConcurrency, tzktAddress} from '../constants';
+import {TzktAuctionKey} from '../types';
 
 export class AuctionHouseContract extends Contract {
     constructor(protected tezos: TezosToolkit, address: string) {
@@ -70,11 +73,11 @@ export class AuctionHouseContract extends Contract {
         }
     }
 
-
-    // TODO: add the offchain view for seeing which auctions can be resolved
     // Maybe add TZIP16 to the actual contract :shrug
-
+    // ToDo: can have a gas-lock as it is a view! So do not use it like this anymore!
     async getExpiredAuctions(): Promise<number> {
+
+
         const contract = await this.tezos.contract.at(this.getAddress(), tzip16);
         const views = await contract.tzip16().metadataViews();
         const date = new Date().toISOString();
@@ -82,5 +85,40 @@ export class AuctionHouseContract extends Contract {
         console.log((ret as Array<any>).map(number => number.toNumber()));
         return ret;
     }
+
+    // Also must be an Batch-Call
+    /**
+     * If you get the exception "VOTER_MONEY_POOL_NOT_ADMIN" set the Auction-Contract address of the VOTER_MONEY_POOL!
+     */
+    async endExpiredAuctions(): Promise<any> {
+        let loadLimit = maxConcurrency;
+        let index = 0
+
+        const timeString = new Date(Date.now()).toString();
+        let auctions = [];
+        do {
+            let actualOffset = loadLimit * index;
+            const auctionRequest = await fetch(`${tzktAddress}contracts/${auctionHouseContractAddress}/bigmaps/auctions/keys?limit=${loadLimit}&offset=${actualOffset}&value.end_timestamp.lt=${timeString}`);
+            auctions = (await auctionRequest.json()) as TzktAuctionKey[];
+            index++;
+
+            const batch = this.tezos.wallet.batch();
+            for (let auction of auctions) {
+                if (this.contract) {
+                    batch.withContractCall(this.contract.methods.end_auction(auction.key));
+                }
+            }
+            /*
+             * Here happens all the operation batching
+             */
+            const batchOp = await batch.send();
+            const confirmation = await batchOp.confirmation(1);
+            console.log(`Operation injected: https://ghost.tzstats.com/${confirmation.block.hash}`);
+
+            console.log(auctions.map(auction => auction.key));
+        } while(auctions.length)
+    }
+
+
 
 }

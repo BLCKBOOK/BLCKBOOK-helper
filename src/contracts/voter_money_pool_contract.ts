@@ -31,6 +31,17 @@ export class VoterMoneyPoolContract extends Contract {
         return ret;
     }
 
+    async set_auction_house_address(address: string, confirmations = 2): Promise<void> {
+        try {
+            const call: TransactionWalletOperation | TransactionOperation | undefined =
+                await this.contract?.methods.set_auction_house_address(address).send();
+            const hash: any | undefined = await call?.confirmation(confirmations);
+            console.log(`Operation injected: https://ghost.tzstats.com/${hash}`);
+        } catch (error) {
+            console.log(`Error: ${JSON.stringify(error, null, 2)}`);
+        }
+    }
+
     // TODO add withdraw
     // also check with the view how much we can withdraw. (For tests)
 }

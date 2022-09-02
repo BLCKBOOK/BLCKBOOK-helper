@@ -84,6 +84,8 @@ export class Originator {
     }
     
     async originateAllContracts() {
+
+        // ToDO. Set the auction contract of the voter_money_pool. Otherwise only THE_VOTE could end auctions. which would be horrible
         /*const tokenContract = await this.originate(this.fa2ContractMichelsonCode, this.initialFA2Storage);
         console.log(tokenContract.address);
         const voterMoneyPoolContract = await this.originate(this.voterMoneyPoolMichelsonCode, this.initialVoterMoneyPoolStorage);
