@@ -1,11 +1,10 @@
 export const ipfsPrefix = 'ipfs://';
-export const tokenContractAddress = 'KT1D1hhh4aKTLt79iu4q1M8bfHsUR9cpUKds';
-export const voterMoneyPoolContractAddress = 'KT1StnQpS86BUw8gjLNU2aVw6qgeuP5szEe7';
-export const auctionHouseContractAddress = 'KT19ubT4oVE4L4KatHE1WJbPb481fXaumei1';
-export const theOldVoteContractAddress = 'KT1DcoAaqwJSXTNcxjUPhkFuW6BJmJL6TG3V';
-export const theVoteContractAddress = 'KT1KYDPcBS1MCLYRvbYGu1ZLUuhkNNXDyh1B'
-export const sprayContractAddress = 'KT19umVySWsL8Etkxfrzpbx3dKqTRyBqTamo';
-export const bankContractAddress = 'KT1VddB9LRnD5reNo2bugLikcxxQ1cHHTFjG';
+export const tokenContractAddress = 'KT1Nqn4twmvFssgnwhgkjFeMsHiceg1tZbKV';
+export const voterMoneyPoolContractAddress = 'KT1Ats6HPT2ePmwY37QXbedm9noiXocNAwS8';
+export const auctionHouseContractAddress = 'KT1CNZsuSMFpkGN1D3gAkQtfnTGMzaRk1JBM';
+export const theVoteContractAddress = 'KT1NXAMxDzSjgFv6L3Z7WW6HNUbBY2rHXaVV'
+export const sprayContractAddress = 'KT1FSCVnbU1oNhUz52u6SBDfmfQo38du7ivH';
+export const bankContractAddress = 'KT1FSCVnbU1oNhUz52u6SBDfmfQo38du7ivH';
 
 export const tokenMetadataIPFSHASH = 'QmchAqaHk7eBDxHEYK6QyekoBW9QFVuXN8qnft3w3PVArG';
 export const sprayMetadataIPFSHASH = 'QmZRCk4poGaJbHbJvhNdZcSY6kDBeJNbyhVBz2CS7MsQBZ';

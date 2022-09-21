@@ -16,7 +16,7 @@ import {ArtworkParams, TheVoteContract} from './contracts/the_vote_contract';
 import {
     auctionHouseContractAddress, auctionHouseMetadataIPFSHASH,
     bankContractAddress, maxConcurrency,
-    sprayContractAddress, sprayMetadataIPFSHASH, sprayTOKENMetadata, theOldVoteContractAddress,
+    sprayContractAddress, sprayMetadataIPFSHASH, sprayTOKENMetadata,
     theVoteContractAddress,
     tokenContractAddress,
     tokenMetadataIPFSHASH, tzktAddress, voteMetadataIPFSHASH,
@@ -75,6 +75,7 @@ async function main() {
     const tezos = new TezosToolkit(rpc);
 
     await setUser(tezos, admin as User)
+    const originator = new Originator(tezos);
 
     const vote = new TheVoteContract(tezos, theVoteContractAddress);
     await vote.ready;
@@ -94,9 +95,6 @@ async function main() {
     const spray = new SprayContract(tezos, sprayContractAddress);
     await spray.ready;
 
-    const originator = new Originator(tezos);
-
-    await auctionHouse.endExpiredAuctions();
 
     /*    await vote.setAdminOfTokenContract(admin.pkh);
         await originator.setContractMetaDataWithHash(tokenContractAddress, tokenMetadataIPFSHASH);*/
@@ -112,7 +110,9 @@ async function main() {
 
     // await vote.calculateAndVote(1, 160, 42)
 
-    /*await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', 'tz1LfhkLnSuixoDf9aYc3a3MyC5srGKBGSPu');*/
+/*    await mintAndBuildNotifications(tezos, vote);
+
+    await vote.admission('QmWNX6uPijNy6tt9Uo9WgHDRMfWPDQA8Tj8MkPn6DwQXSf', 'tz1LfhkLnSuixoDf9aYc3a3MyC5srGKBGSPu');*/
 /*    await vote.setVotesTransmissionLimitDuringMinting(100);
 
     /*await vote.calculateAndVote(1, 2, 0);
