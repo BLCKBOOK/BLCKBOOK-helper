@@ -4,7 +4,7 @@ export const voterMoneyPoolContractAddress = 'KT1Ats6HPT2ePmwY37QXbedm9noiXocNAw
 export const auctionHouseContractAddress = 'KT1CNZsuSMFpkGN1D3gAkQtfnTGMzaRk1JBM';
 export const theVoteContractAddress = 'KT1NXAMxDzSjgFv6L3Z7WW6HNUbBY2rHXaVV'
 export const sprayContractAddress = 'KT1FSCVnbU1oNhUz52u6SBDfmfQo38du7ivH';
-export const bankContractAddress = 'KT1FSCVnbU1oNhUz52u6SBDfmfQo38du7ivH';
+export const bankContractAddress = 'KT1TYrapwmRFkvHbYWAR3qXxcGXgMjubJvmP';
 
 export const tokenMetadataIPFSHASH = 'QmchAqaHk7eBDxHEYK6QyekoBW9QFVuXN8qnft3w3PVArG';
 export const sprayMetadataIPFSHASH = 'QmZRCk4poGaJbHbJvhNdZcSY6kDBeJNbyhVBz2CS7MsQBZ';
