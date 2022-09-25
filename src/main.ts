@@ -95,6 +95,24 @@ async function main() {
     const spray = new SprayContract(tezos, sprayContractAddress);
     await spray.ready;
 
+    const newTheVote = 'KT1KfttT5ZVLYxi9V8JjrM3Dncg4evdESSyW';
+
+    /*await vote.setAdminOfAuctionContract(newTheVote);
+    await vote.setAdminOfPoolContract(newTheVote);
+    await vote.setAdminOfTokenContract(newTheVote);
+
+    await setUser(tezos, user2);
+    await bank.setTheVoteAddress(newTheVote);
+
+    const newVote = new TheVoteContract(tezos, newTheVote);
+    await newVote.ready;
+
+    await newVote.setNextDeadlineMinutes(15);*/
+
+    const newVote = new TheVoteContract(tezos, newTheVote);
+    await newVote.ready;
+
+    await newVote.setNextDeadlineMinutes(20);
 
     /*    await vote.setAdminOfTokenContract(admin.pkh);
         await originator.setContractMetaDataWithHash(tokenContractAddress, tokenMetadataIPFSHASH);*/

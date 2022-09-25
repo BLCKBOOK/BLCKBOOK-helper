@@ -2,7 +2,8 @@ import {ContractAbstraction, ContractProvider, TezosToolkit} from '@taquito/taqu
 import {char2Bytes} from '@taquito/tzip16';
 import {admin} from './faucet';
 import {
-    ipfsPrefix, sprayTOKENMetadata,
+    auctionHouseContractAddress, bankContractAddress,
+    ipfsPrefix, sprayContractAddress, sprayTOKENMetadata, tokenContractAddress, voterMoneyPoolContractAddress,
 } from './constants';
 import {TheVoteContract} from './contracts/the_vote_contract';
 import {BankContract} from './contracts/bank_contract';
@@ -87,6 +88,11 @@ export class Originator {
 
     async setSprayMetaData(sprayAddress: string) {
         await this.setContractMetaDataWithHash(sprayAddress, this.sprayMetaData);
+    }
+
+    async originateTheVote() {
+        const theVoteContract = await this.originate(this.theVoteMichelsonCode, this.getTheVoteStorage(auctionHouseContractAddress, voterMoneyPoolContractAddress, bankContractAddress, sprayContractAddress, tokenContractAddress));
+        console.log(`theVote: ${theVoteContract.address}`);
     }
 
     async originateAllContracts(bankAdmin: string) {

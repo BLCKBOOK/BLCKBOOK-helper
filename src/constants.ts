@@ -2,7 +2,7 @@ export const ipfsPrefix = 'ipfs://';
 export const tokenContractAddress = 'KT1Nqn4twmvFssgnwhgkjFeMsHiceg1tZbKV';
 export const voterMoneyPoolContractAddress = 'KT1Ats6HPT2ePmwY37QXbedm9noiXocNAwS8';
 export const auctionHouseContractAddress = 'KT1CNZsuSMFpkGN1D3gAkQtfnTGMzaRk1JBM';
-export const theVoteContractAddress = 'KT1NXAMxDzSjgFv6L3Z7WW6HNUbBY2rHXaVV'
+export const theVoteContractAddress = 'KT1KfttT5ZVLYxi9V8JjrM3Dncg4evdESSyW'
 export const sprayContractAddress = 'KT1FSCVnbU1oNhUz52u6SBDfmfQo38du7ivH';
 export const bankContractAddress = 'KT1TYrapwmRFkvHbYWAR3qXxcGXgMjubJvmP';
 
