@@ -73,19 +73,6 @@ export class AuctionHouseContract extends Contract {
         }
     }
 
-    // Maybe add TZIP16 to the actual contract :shrug
-    // ToDo: can have a gas-lock as it is a view! So do not use it like this anymore!
-    async getExpiredAuctions(): Promise<number> {
-
-
-        const contract = await this.tezos.contract.at(this.getAddress(), tzip16);
-        const views = await contract.tzip16().metadataViews();
-        const date = new Date().toISOString();
-        const ret = (await views.get_expired_auctions().executeView(date));
-        console.log((ret as Array<any>).map(number => number.toNumber()));
-        return ret;
-    }
-
     // Also must be an Batch-Call
     /**
      * If you get the exception "VOTER_MONEY_POOL_NOT_ADMIN" set the Auction-Contract address of the VOTER_MONEY_POOL!
@@ -94,13 +81,21 @@ export class AuctionHouseContract extends Contract {
         let loadLimit = maxConcurrency;
         let index = 0
 
-        const timeString = new Date(Date.now()).toString();
+        let now = new Date()
+        const date = now.toISOString()
+
+        let timeString = new Date(Date.now()).toString();
+        console.log(date);
+        console.log(timeString);
+        console.log(timeString === date);
         let auctions = [];
         do {
             let actualOffset = loadLimit * index;
-            const auctionRequest = await fetch(`${tzktAddress}contracts/${auctionHouseContractAddress}/bigmaps/auctions/keys?limit=${loadLimit}&offset=${actualOffset}&value.end_timestamp.lt=${timeString}`);
+            const auctionRequest = await fetch(`${tzktAddress}contracts/${auctionHouseContractAddress}/bigmaps/auctions/keys?limit=${loadLimit}&offset=${actualOffset}&value.end_timestamp.lt=${timeString}&active=true`);
             auctions = (await auctionRequest.json()) as TzktAuctionKey[];
             index++;
+
+            console.log(auctions.length)
 
             const batch = this.tezos.wallet.batch();
             for (let auction of auctions) {
