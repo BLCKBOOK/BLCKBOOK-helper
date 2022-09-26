@@ -1,4 +1,4 @@
-import {admin, user1, user2, user3, user4, userNotRegistered} from './faucet';
+import {admin, bankAdmin} from './faucet';
 import {pinataKeys} from './pinata-keys';
 import {importKey, InMemorySigner} from '@taquito/signer';
 import {char2Bytes, Tzip16Module} from '@taquito/tzip16';
@@ -53,12 +53,17 @@ const ipfsPrefix = 'ipfs://';
 async function activateAccount() {
 }
 
-export interface User {
+export interface FaucetUser {
     email: string,
     password: string,
     mnemonic: string[],
     activation_code: string,
     pkh: string,
+}
+
+export interface User {
+    pkh: string,
+    privateKey: string
 }
 
 async function main() {
@@ -74,7 +79,7 @@ async function main() {
 
     const tezos = new TezosToolkit(rpc);
 
-    await setUser(tezos, admin as User)
+    await setUser(tezos, admin)
     const originator = new Originator(tezos);
 
     const vote = new TheVoteContract(tezos, theVoteContractAddress);
@@ -109,10 +114,7 @@ async function main() {
 
     await newVote.setNextDeadlineMinutes(15);*/
 
-    const newVote = new TheVoteContract(tezos, newTheVote);
-    await newVote.ready;
-
-    await newVote.setNextDeadlineMinutes(20);
+    await vote.setNextDeadlineMinutes(20);
 
     /*    await vote.setAdminOfTokenContract(admin.pkh);
         await originator.setContractMetaDataWithHash(tokenContractAddress, tokenMetadataIPFSHASH);*/
@@ -233,8 +235,13 @@ async function mintAndBuildNotifications(tezos: TezosToolkit, vote: TheVoteContr
     return true;
 }
 
+async function setUser(tezos: TezosToolkit, prodUser: User) {
+    tezos.setSignerProvider(await InMemorySigner.fromSecretKey(prodUser.privateKey));
+    await importKey(tezos, prodUser.privateKey);
+}
 
-async function setUser(tezos: TezosToolkit, currentUser: User) {
+
+async function setFaucetUser(tezos: TezosToolkit, currentUser: FaucetUser) {
     tezos.setSignerProvider(InMemorySigner.fromFundraiser(currentUser.email, currentUser.password, currentUser.mnemonic.join(' ')));
 
     tezos.addExtension(new Tzip16Module());
@@ -248,10 +255,10 @@ async function setUser(tezos: TezosToolkit, currentUser: User) {
     ).catch((e: any) => console.error(e));
 }
 
-async function artworkTestAdmission(tezos: TezosToolkit, vote: TheVoteContract, spray: SprayContract, mintSprayForUsers = false) {
+/*async function artworkTestAdmission(tezos: TezosToolkit, vote: TheVoteContract, spray: SprayContract, mintSprayForUsers = false) {
     if (mintSprayForUsers) {
         await spray.mint(user1.pkh, 10000000, 'existing', 0);
-        await spray.mint(user2.pkh, 10000000, 'existing', 0);
+        await spray.mint(bankAdmin.pkh, 10000000, 'existing', 0);
         await spray.mint(user3.pkh, 10000000, 'existing', 0);
         await spray.mint(user4.pkh, 10000000, 'existing', 0);
     }
@@ -276,7 +283,7 @@ async function artworkTestAdmission(tezos: TezosToolkit, vote: TheVoteContract, 
     for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
         await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
     }
-    await setUser(tezos, user2);
+    await setUser(tezos, bankAdmin as unknown as User);
     for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
         await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
     }
@@ -288,9 +295,4 @@ async function artworkTestAdmission(tezos: TezosToolkit, vote: TheVoteContract, 
     for (let i = 0; i < Math.floor((admissions_this_period) / batchSize); i++) {
         await vote.voteBatch((i * batchSize), batchSize, allArtworks - admissions_this_period);
     }
-}
-
-/*
-    TODO:
-      - fix the originator deploy all contracts to deploy all contracts
- */
+}*/
