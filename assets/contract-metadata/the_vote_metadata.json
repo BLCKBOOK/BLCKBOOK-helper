@@ -4,7 +4,7 @@
   "version": "0.1",
   "views": [],
   "interfaces": [],
-  "authors": [ "Niels Hanselmann" ],
+  "authors": [ "Niels Hanselmann <niels@blckbook.xyz>" ],
   "homepage": "https://blckbook.vote",
   "source": { "tools": [ "SmartPy" ], "location": "https://github.com/BLCKBOOK/BLCKBOOK-contract" },
   "permissions": {}

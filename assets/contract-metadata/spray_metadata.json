@@ -128,7 +128,7 @@
   ],
   "description": "This is an adapted  minimal implementation of FA2 (TZIP-012) using SmartPy. It is used for the $PRAY-Token",
   "interfaces": [ "TZIP-012", "TZIP-016" ],
-  "authors": [ "Niels Hanselmann", "SmartPy <https://smartpy.io/#contact>" ],
+  "authors": [ "Niels Hanselmann <niels@blckbook.xyz>", "SmartPy <https://smartpy.io/#contact>" ],
   "homepage": "https://blckbook.vote",
   "source": { "tools": [ "SmartPy" ], "location": "https://github.com/BLCKBOOK/BLCKBOOK-contract" },
   "permissions": { "operator": "owner-or-operator-transfer", "receiver": "owner-no-hook", "sender": "owner-no-hook" }

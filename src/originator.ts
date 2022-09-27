@@ -2,8 +2,14 @@ import {ContractAbstraction, ContractProvider, TezosToolkit} from '@taquito/taqu
 import {char2Bytes} from '@taquito/tzip16';
 import {admin} from './faucet';
 import {
-    auctionHouseContractAddress, bankContractAddress,
-    ipfsPrefix, sprayContractAddress, sprayTOKENMetadata, tokenContractAddress, voterMoneyPoolContractAddress,
+    auctionHouseMetadataIPFSHASH,
+    contracts,
+    ipfsPrefix,
+    sprayMetadataIPFSHASH,
+    sprayTOKENMetadataIPFSHASH,
+    tokenMetadataIPFSHASH,
+    voteMetadataIPFSHASH,
+    voterMoneyPoolMetadataIPFSHASH
 } from './constants';
 import {TheVoteContract} from './contracts/the_vote_contract';
 import {BankContract} from './contracts/bank_contract';
@@ -21,11 +27,6 @@ export class Originator {
     private sprayMichelsonCode = require('../assets/contract-code/spray.json');
     private bankMichelsonCode = require('../assets/contract-code/bank.json');
     private adminPublicKey = admin.pkh; // aka our admin-address
-    private voterMoneyPoolMetaData = require('../assets/contract-metadata/voter-money-pool-metadata.json');
-    private fa2ContractMetaData = require('../assets/contract-metadata/fa2-contract-metadata.json');
-    private auctionHouseMetaData = require('../assets/contract-metadata/auction_house-metadata.json');
-    private theVoteMetaData = require('../assets/contract-metadata/the_vote_metadata.json');
-    private sprayMetaData = require('../assets/contract-metadata/spray_metadata.json');
 
     private initialFA2Storage = `(Pair "${this.adminPublicKey}" (Pair 0 (Pair {} (Pair {} (Pair {} (Pair False {}))))))`;
     private initialVoterMoneyPoolStorage = `(Pair (Pair "${this.adminPublicKey}" (Right Unit)) (Pair {} (Pair {} {})))`;
@@ -51,17 +52,16 @@ export class Originator {
 
     async setContractMetaDataWithHash(contractAddress: string, ipfsHash: string) {
         let contract = await this.tezos.contract.at(contractAddress);
-        contract.methodsObject.set_metadata({
+        const call = await contract.methodsObject.set_metadata({
             k: '',
             v: char2Bytes(ipfsPrefix + ipfsHash)
         }).send({
             fee: 800
-        }).then((op) => {
-            console.log(`Waiting for ${op.hash} to be confirmed...`);
-            return op.confirmation(3).then(() => op.hash);
         })
-            .then((hash) => console.log(`Operation injected: https://ghost.tzstats.com/${hash}`))
-            .catch((error) => console.log(`Error: ${JSON.stringify(error, null, 2)}`));
+
+        console.log(`Waiting for ${call.hash} to be confirmed...`);
+        await call.confirmation(3);
+        console.log(`Operation injected: https://ghost.tzstats.com/${call.hash}`)
     }
 
 
@@ -75,23 +75,27 @@ export class Originator {
     }
 
     async setTheVoteMetaData(theVoteAddress: string) {
-        await this.setContractMetaDataWithHash(theVoteAddress, this.theVoteMetaData);
+        await this.setContractMetaDataWithHash(theVoteAddress, voteMetadataIPFSHASH);
     }
 
     async setAuctionHouseMetaData(auctionHouseAddress: string) {
-        await this.setContractMetaDataWithHash(auctionHouseAddress, this.auctionHouseMetaData);
+        await this.setContractMetaDataWithHash(auctionHouseAddress, auctionHouseMetadataIPFSHASH);
     }
 
     async setTokenContractMetaData(tokenAddress: string) {
-        await this.setContractMetaDataWithHash(tokenAddress, this.fa2ContractMetaData);
+        await this.setContractMetaDataWithHash(tokenAddress, tokenMetadataIPFSHASH);
     }
 
     async setSprayMetaData(sprayAddress: string) {
-        await this.setContractMetaDataWithHash(sprayAddress, this.sprayMetaData);
+        await this.setContractMetaDataWithHash(sprayAddress, sprayMetadataIPFSHASH);
+    }
+
+    async setVoterMoneyPoolMetaData(voterMoneyPoolAddress: string) {
+        await this.setContractMetaDataWithHash(voterMoneyPoolAddress, voterMoneyPoolMetadataIPFSHASH);
     }
 
     async originateTheVote() {
-        const theVoteContract = await this.originate(this.theVoteMichelsonCode, this.getTheVoteStorage(auctionHouseContractAddress, voterMoneyPoolContractAddress, bankContractAddress, sprayContractAddress, tokenContractAddress));
+        const theVoteContract = await this.originate(this.theVoteMichelsonCode, this.getTheVoteStorage(contracts.auctionHouseContractAddress, contracts.voterMoneyPoolContractAddress, contracts.bankContractAddress, contracts.sprayContractAddress, contracts.tokenContractAddress));
         console.log(`theVote: ${theVoteContract.address}`);
     }
 
@@ -116,6 +120,15 @@ export class Originator {
         const bankContract = await this.originate(this.bankMichelsonCode, this.getBankStorage(sprayTokenContract.address, theVoteContract.address));
         console.log(`bank: ${bankContract.address}`);
 
+        console.log('') // output for easy copy/paste
+        console.log(`tokenContractAddress: \"${tokenContract.address}\",`);
+        console.log(`voterMoneyPoolContractAddress: \"${voterMoneyPoolContract.address}\",`);
+        console.log(`auctionHouseContractAddress: \"${auctionHouseContract.address}\",`);
+        console.log(`theVoteContractAddress: \"${theVoteContract.address}\",`);
+        console.log(`sprayContractAddress: \"${sprayTokenContract.address}\",`);
+        console.log(`bankContractAddress: \"${bankContract.address}\",`);
+        console.log('')
+
         const vote = new TheVoteContract(this.tezos, theVoteContract.address);
         await vote.ready;
 
@@ -135,21 +148,34 @@ export class Originator {
         await spray.ready;
 
         console.log('initiated all contracts in the local taquito-setup');
-        await vote.setNextDeadlineMinutes(100);
+
+        try {
+            await this.setTokenContractMetaData(tokenContract.address);
+            await this.setSprayMetaData(spray.getAddress());
+            await this.setAuctionHouseMetaData(auctionHouse.getAddress());
+            await this.setTheVoteMetaData(vote.getAddress());
+            await this.setVoterMoneyPoolMetaData(voterMoneyPool.getAddress());
+        } catch (e) {
+            console.error('some error in the meta-data setting again');
+            console.error(e);
+        }
+
+        console.log('setting the votes contract-addresses')
+        await vote.setNextDeadlineMinutes(20);
         await vote.setSprayBankAddress(bank.getAddress());
         await vote.setSprayAddress(spray.getAddress());
-        console.log('set all references of THE_VOTE')
+        console.log('set all references of THE_VOTE');
 
         await voterMoneyPool.set_auction_house_address(auctionHouseContract.address);
-        console.log('did set the auction house address of the voter-money-pool')
+        console.log('did set the auction house address of the voter-money-pool');
 
         await fa2.setAdministrator(vote.getAddress());
         await voterMoneyPool.setAdministrator(vote.getAddress());
         await auctionHouse.setAdministrator(vote.getAddress());
         console.log('did set the vote to the admin of the contracts');
 
-        await spray.mint(bank.getAddress(), 10000, "new", undefined, sprayTOKENMetadata);
-        console.log('did the mint for the bank')
+        await spray.mint(bank.getAddress(), 10000, 'new', undefined, sprayTOKENMetadataIPFSHASH);
+        console.log('did the mint for the bank');
 
         await bank.setAdministrator(bankAdmin);
         console.log('did set the bank admin');

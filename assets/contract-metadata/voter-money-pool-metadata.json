@@ -94,7 +94,7 @@
       ]
     }
   ],
-  "authors": [ "Niels Hanselmann", "Simon Schiebler" ],
+  "authors": [ "Niels Hanselmann <niels@blckbook.xyz>", "Simon Schiebler <simon@blckbook.xyz>" ],
   "homepage": "https://blckbook.vote",
   "source": { "tools": [ "SmartPy" ], "location": "https://github.com/BLCKBOOK/BLCKBOOK-contract" }
 }

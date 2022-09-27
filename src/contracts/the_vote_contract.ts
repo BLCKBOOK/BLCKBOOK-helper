@@ -7,7 +7,7 @@ import {
 } from '@taquito/taquito';
 import {Contract} from './contract';
 import {char2Bytes} from '@taquito/tzip16';
-import {theVoteContractAddress, tzktAddress} from '../constants';
+import {contracts, ipfsPrefix, tzktAddress} from '../constants';
 import fetch from 'node-fetch';
 import assert from 'assert';
 import {VoteContractHistoryEntry, VoteStorage} from '../types';
@@ -196,7 +196,7 @@ export class TheVoteContract extends Contract {
             args: [{prim: 'string'}, {prim: 'bytes'}],
         });
         storageMap.set('decimals', char2Bytes('0'));
-        storageMap.set('', char2Bytes(ipfsLink));
+        storageMap.set('', char2Bytes(ipfsPrefix + ipfsLink));
         try {
             // @ts-ignore
             const call: TransactionWalletOperation | TransactionOperation | undefined = await this.contract.methodsObject.admission({
@@ -234,7 +234,7 @@ export class TheVoteContract extends Contract {
     }
 
     async deadlinePassed(): Promise<boolean> {
-        const response = await fetch(`${tzktAddress}contracts/${theVoteContractAddress}/storage`);
+        const response = await fetch(`${tzktAddress}contracts/${contracts.theVoteContractAddress}/storage`);
         const storageData = await response.json();
         return Date.parse(storageData.deadline) < Date.now();
     }
@@ -248,7 +248,7 @@ export class TheVoteContract extends Contract {
         if (this.contract) {
             // first try to get the ready_for_minting to work
             do {
-                const response = await fetch(`${tzktAddress}contracts/${theVoteContractAddress}/storage`);
+                const response = await fetch(`${tzktAddress}contracts/${contracts.theVoteContractAddress}/storage`);
                 const storageData = await response.json();
                 if (storageData.ready_for_minting) {
                     console.log('we are ready for minting');
@@ -297,7 +297,7 @@ export class TheVoteContract extends Contract {
                     console.log(mintAmount);
                     if (mintAmount === 1) {
                         console.log('mint-amount is 1');
-                        const response = await fetch(`${tzktAddress}contracts/${theVoteContractAddress}/storage`);
+                        const response = await fetch(`${tzktAddress}contracts/${contracts.theVoteContractAddress}/storage`);
                         const storageData = await response.json();
 
                         const current_limit = parseInt(storageData.minting_ready_limit);
@@ -346,7 +346,7 @@ export class TheVoteContract extends Contract {
                     }
                     mintAmount = Math.floor(mintAmount / 5 * 4);
                 }
-                const response = await fetch(`${tzktAddress}contracts/${theVoteContractAddress}/storage`);
+                const response = await fetch(`${tzktAddress}contracts/${contracts.theVoteContractAddress}/storage`);
                 const storageData = await response.json();
 
                 mintedAll = !(storageData.ready_for_minting);
@@ -385,7 +385,7 @@ export class TheVoteContract extends Contract {
      */
     async calculateAndVote(amount: number, artwork_id: number, index: number) {
 
-        const bigMapAddress = await fetch(`${tzktAddress}contracts/${theVoteContractAddress}/bigmaps/votes`);
+        const bigMapAddress = await fetch(`${tzktAddress}contracts/${contracts.theVoteContractAddress}/bigmaps/votes`);
         const votesBigMapAddress = (await bigMapAddress.json()).ptr;
 
 
@@ -393,7 +393,7 @@ export class TheVoteContract extends Contract {
         const data = await response.json();
         const startEntry = data.value as Vote;
 
-        const response2 = await fetch(`${tzktAddress}contracts/${theVoteContractAddress}/storage`);
+        const response2 = await fetch(`${tzktAddress}contracts/${contracts.theVoteContractAddress}/storage`);
         const storageData = await response2.json();
 
         const highestVoteIndex = parseInt(storageData.highest_vote_index);
@@ -506,7 +506,7 @@ export class TheVoteContract extends Contract {
         let lastId: string | undefined = undefined;
         while (true) {
             let params =  (lastId ? new URLSearchParams({lastId: lastId}) : '').toString();
-            let searchString = `${tzktAddress}contracts/${theVoteContractAddress}/storage/history/?` + params;
+            let searchString = `${tzktAddress}contracts/${contracts.theVoteContractAddress}/storage/history/?` + params;
             let response = await fetch(searchString);
             let entries = await response.json() as VoteContractHistoryEntry[];
             let entry = entries.find(entry => entry.operation.parameter?.entrypoint === 'ready_for_minting');

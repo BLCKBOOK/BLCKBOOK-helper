@@ -1,6 +1,7 @@
 import {MichelsonMap, TezosToolkit, TransactionOperation, TransactionWalletOperation} from '@taquito/taquito';
 import {char2Bytes} from '@taquito/tzip16';
 import {Contract} from './contract';
+import {ipfsPrefix} from '../constants';
 
 export class FA2TokenContract extends Contract {
     constructor(protected tezos: TezosToolkit, address: string) {
@@ -23,7 +24,7 @@ export class FA2TokenContract extends Contract {
             args: [{prim: 'string'}, {prim: 'bytes'}],
         });
         storageMap.set('decimals', char2Bytes('0'));
-        storageMap.set('', char2Bytes(ipfsLink));
+        storageMap.set('', char2Bytes(ipfsPrefix + ipfsLink));
         try {
             const call: TransactionWalletOperation | TransactionOperation | undefined = await this.contract?.methods.mint(
                 ownerAddress, 1, storageMap, tokenId

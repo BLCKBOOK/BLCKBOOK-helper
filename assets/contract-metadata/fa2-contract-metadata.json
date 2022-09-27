@@ -1,6 +1,6 @@
 {
   "name": "BLCKBOOK",
-  "description": "BLCKBOOK beta implementation. Uses the didactic reference implementation of FA2, a.k.a. TZIP-012, using SmartPy.\n\n",
+  "description": "BLCKBOOK beta implementation. Uses the didactic reference implementation of FA2, a.k.a. TZIP-012, using SmartPy.",
   "version": "FA2",
   "views": [
     {
@@ -135,7 +135,7 @@
     }
   ],
   "interfaces": [ "TZIP-012", "TZIP-016" ],
-  "authors": [ "Niels Hanselmann", "Simon Schiebler" ],
+  "authors": [ "Niels Hanselmann <niels@blckbook.xyz>", "Simon Schiebler <simon@blckbook.xyz>" ],
   "homepage": "https://blckbook.vote",
   "source": { "tools": [ "SmartPy" ], "location": "https://github.com/BLCKBOOK/BLCKBOOK-contract" },
   "permissions": { "operator": "owner-or-operator-transfer", "receiver": "owner-no-hook", "sender": "owner-no-hook" }

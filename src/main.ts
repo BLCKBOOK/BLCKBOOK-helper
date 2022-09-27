@@ -1,12 +1,7 @@
 import {admin, bankAdmin} from './faucet';
-import {pinataKeys} from './pinata-keys';
 import {importKey, InMemorySigner} from '@taquito/signer';
 import {char2Bytes, Tzip16Module} from '@taquito/tzip16';
-import pinataSDK from '@pinata/sdk';
 import {
-    ContractAbstraction,
-    ContractProvider,
-    MichelsonMap,
     TezosToolkit,
     TransactionOperation,
     TransactionWalletOperation
@@ -14,14 +9,7 @@ import {
 import {Originator} from './originator';
 import {ArtworkParams, TheVoteContract} from './contracts/the_vote_contract';
 import {
-    auctionHouseContractAddress, auctionHouseMetadataIPFSHASH,
-    bankContractAddress, maxConcurrency,
-    sprayContractAddress, sprayMetadataIPFSHASH, sprayTOKENMetadata,
-    theVoteContractAddress,
-    tokenContractAddress,
-    tokenMetadataIPFSHASH, tzktAddress, voteMetadataIPFSHASH,
-    voterMoneyPoolContractAddress,
-    voterMoneyPoolMetadataIPFSHASH
+    contracts, maxConcurrency, tzktAddress
 } from './constants';
 import {BankContract} from './contracts/bank_contract';
 import {AuctionHouseContract} from './contracts/auction_house_contract';
@@ -30,28 +18,6 @@ import {VoterMoneyPoolContract} from './contracts/voter_money_pool_contract';
 import {SprayContract} from './contracts/spray_contract';
 import fetch from 'node-fetch';
 import {TzktArtworkInfoBigMapKey, TzktVotesRegisterBigMapKey} from './types';
-
-
-
-// now do the setup for Pinata
-/*const pinata = pinataSDK(pinataKeys.key, pinataKeys.secret);
-
-pinata.testAuthentication().then((result) => {
-    //handle successful authentication here
-    console.log(result);
-}).catch((err) => {
-    //handle error here
-    console.log(err);
-});*/
-
-
-const ipfsPrefix = 'ipfs://';
-
-
-// This will then probably be needed for the activation of multiple accounts.
-// Somehow I need a user-management
-async function activateAccount() {
-}
 
 export interface FaucetUser {
     email: string,
@@ -82,25 +48,23 @@ async function main() {
     await setUser(tezos, admin)
     const originator = new Originator(tezos);
 
-    const vote = new TheVoteContract(tezos, theVoteContractAddress);
+    const vote = new TheVoteContract(tezos, contracts.theVoteContractAddress);
     await vote.ready;
 
-    const bank = new BankContract(tezos, bankContractAddress);
+    const bank = new BankContract(tezos, contracts.bankContractAddress);
     await bank.ready;
 
-    const auctionHouse = new AuctionHouseContract(tezos, auctionHouseContractAddress);
+    const auctionHouse = new AuctionHouseContract(tezos, contracts.auctionHouseContractAddress);
     await auctionHouse.ready;
 
-    const fa2 = new FA2TokenContract(tezos, tokenContractAddress);
-    await fa2.ready;
+    const tokenContract = new FA2TokenContract(tezos, contracts.tokenContractAddress);
+    await tokenContract.ready;
 
-    const voterMoneyPool = new VoterMoneyPoolContract(tezos, voterMoneyPoolContractAddress);
+    const voterMoneyPool = new VoterMoneyPoolContract(tezos, contracts.voterMoneyPoolContractAddress);
     await voterMoneyPool.ready;
 
-    const spray = new SprayContract(tezos, sprayContractAddress);
+    const spray = new SprayContract(tezos, contracts.sprayContractAddress);
     await spray.ready;
-
-    const newTheVote = 'KT1KfttT5ZVLYxi9V8JjrM3Dncg4evdESSyW';
 
     /*await vote.setAdminOfAuctionContract(newTheVote);
     await vote.setAdminOfPoolContract(newTheVote);
@@ -113,12 +77,7 @@ async function main() {
     await newVote.ready;
 
     await newVote.setNextDeadlineMinutes(15);*/
-
-    await vote.setNextDeadlineMinutes(20);
-
-    /*    await vote.setAdminOfTokenContract(admin.pkh);
-        await originator.setContractMetaDataWithHash(tokenContractAddress, tokenMetadataIPFSHASH);*/
-    /*    await fa2.setAdministrator(theVoteContractAddress);*/
+    // await tokenContract.setAdministrator(vote.getAddress());
 
     /*    await vote.setAdminOfPoolContract(admin.pkh);
         await originator.setContractMetaDataWithHash(voterMoneyPoolContractAddress, voterMoneyPoolMetadataIPFSHASH);
@@ -137,11 +96,6 @@ async function main() {
 
     /*await vote.calculateAndVote(1, 2, 0);
     await vote.calculateAndVote(1, 2, 0);*/
-/*
-
-    await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', user2.pkh);
-    await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', user1.pkh);
-    await vote.admission('QmXPeXvyMLXqyhwB6owYMms8o8zqu2v2ofMvX25nGjJGFx', admin.pkh);*/
 
     // await vote.calculateAndVote(3, 1, 1);
 
@@ -155,7 +109,7 @@ async function main() {
 
     auction_house.set_administrator(the_vote.address).run(sender=admin)
     voter_money_pool.set_administrator(the_vote.address).run(sender=admin)
-    fa2.set_administrator(the_vote.address).run(sender=admin)*/
+    tokenContract.set_administrator(the_vote.address).run(sender=admin)*/
 }
 
 main().then(() => console.log('all successful'));
@@ -179,7 +133,7 @@ async function mintAndBuildNotifications(tezos: TezosToolkit, vote: TheVoteContr
     }
 
     // now get the max_auction_and_token_id because all artworks are already minted
-    let response = await fetch(`${tzktAddress}contracts/${tokenContractAddress}/storage`);
+    let response = await fetch(`${tzktAddress}contracts/${contracts.tokenContractAddress}/storage`);
     let storageData = await response.json();
     let max_auction_and_token_id;
     if (storageData.all_tokens) {

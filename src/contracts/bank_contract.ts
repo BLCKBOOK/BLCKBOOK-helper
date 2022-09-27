@@ -1,7 +1,7 @@
 import {TezosToolkit, TransactionOperation, TransactionWalletOperation} from '@taquito/taquito';
 import {Contract} from './contract';
 import fetch from 'node-fetch';
-import {bankContractAddress, tzktAddress} from '../constants';
+import {contracts, tzktAddress} from '../constants';
 
 export class BankContract extends Contract {
 
@@ -86,7 +86,7 @@ export class BankContract extends Contract {
     }
 
     async userIsRegistered(userKey: string): Promise<any> {
-        const withdrawlsBigMap = await fetch(`${tzktAddress}contracts/${bankContractAddress}/bigmaps/withdrawls`);
+        const withdrawlsBigMap = await fetch(`${tzktAddress}contracts/${contracts.bankContractAddress}/bigmaps/withdrawls`);
         const withdrawlsBigMapAddress = (await withdrawlsBigMap.json()).ptr;
 
 

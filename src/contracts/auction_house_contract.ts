@@ -1,8 +1,7 @@
 import {Contract} from './contract';
-import {MichelsonMap, TezosToolkit, TransactionOperation, TransactionWalletOperation} from '@taquito/taquito';
-import {char2Bytes, tzip16} from '@taquito/tzip16';
+import {TezosToolkit, TransactionOperation, TransactionWalletOperation} from '@taquito/taquito';
 import fetch from 'node-fetch';
-import {auctionHouseContractAddress, bankContractAddress, maxConcurrency, tzktAddress} from '../constants';
+import {contracts, maxConcurrency, tzktAddress} from '../constants';
 import {TzktAuctionKey} from '../types';
 
 export class AuctionHouseContract extends Contract {
@@ -87,7 +86,7 @@ export class AuctionHouseContract extends Contract {
         let auctions = [];
         do {
             let actualOffset = loadLimit * index;
-            const auctionRequest = await fetch(`${tzktAddress}contracts/${auctionHouseContractAddress}/bigmaps/auctions/keys?limit=${loadLimit}&offset=${actualOffset}&value.end_timestamp.lt=${date}&active=true`);
+            const auctionRequest = await fetch(`${tzktAddress}contracts/${contracts.auctionHouseContractAddress}/bigmaps/auctions/keys?limit=${loadLimit}&offset=${actualOffset}&value.end_timestamp.lt=${date}&active=true`);
             auctions = (await auctionRequest.json()) as TzktAuctionKey[];
             index++;
 
